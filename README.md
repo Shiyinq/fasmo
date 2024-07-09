@@ -50,8 +50,14 @@ Activate the venv with the following command:
 ```
 conda activate [venv-name]
 ```
+**2. Install requirements**
 
-**2. Create the .env File**
+Install the required dependencies with the following command:
+
+```
+pip install -r requirements/dev.txt
+```
+**3. Create the .env File**
 
 Create and update `.env` file based on `.env.example`
 
@@ -59,7 +65,7 @@ Create and update `.env` file based on `.env.example`
 cp .env.example .env
 ```
 
-**3. Run the backend**
+**4. Run the backend**
 
 Run the server with the following command:
 
@@ -67,7 +73,7 @@ Run the server with the following command:
 sh script/start-dev.sh
 ```
 
-**4. Open the API Documentation**
+**5. Open the API Documentation**
 
 The API documentation can be opened in a browser at the following address:
 
