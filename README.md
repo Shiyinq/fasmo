@@ -71,6 +71,7 @@ http://localhost:8000/docs
 
 ### Frontend
 **1. Go to frontend folder**
+
 Go to frontend folder and install dependencies:
 ```
 cd frontend
