@@ -1,6 +1,6 @@
 # FASMO
 
-<div style="text-align: center;">
+<div align="center">
 <!-- https://patorjk.com/software/taag/#p=display&f=Ghost&t=FASMO -->
 <pre>
             ('-.      .-')   _   .-')                
