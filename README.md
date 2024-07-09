@@ -21,7 +21,7 @@ FASMO - FastAPI SvelteKit MongoDB
 
 The project structure for the backend is inspired by [this repository](https://github.com/zhanymkanov/fastapi-best-practices?tab=readme-ov-file#project-structure).
 
-The frontend of the project is built using SvelteKit, initialized with the command: `npm create svelte@latest fasmo`.
+The frontend of the project is built using SvelteKit, initialized with the command: <br /> `npm create svelte@latest fasmo`
 
 # Table of Contents
 - [FASMO](#fasmo)
