@@ -99,6 +99,7 @@ cp .env.example .env
 ```
 
 **3. Run the frontend**
+
 Run development server
 ```bash
 npm run dev
