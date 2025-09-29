@@ -2,14 +2,11 @@ from typing import Dict
 
 from pymongo.errors import DuplicateKeyError
 
-from src.auth.email_service import EmailService
-from src.auth.security_service import SecurityService
-from src.config import config
+from src.auth.service import send_email_verification
 from src.users import repository
 from src.users.constants import Info
 from src.users.exceptions import EmailTaken, ServerError, UsernameTaken
 from src.users.schemas import ProviderUserCreate, UserCreate
-from src.utils import hash_token
 
 
 async def base_create_user(user) -> Dict[str, str]:
@@ -33,15 +30,7 @@ async def create_user(user: UserCreate) -> Dict[str, str]:
 
     # Send email verification for regular signup
     try:
-        token = SecurityService.create_token()
-        token_hash = hash_token(token)
-        await SecurityService.save_token(
-            user.userId,
-            token_hash,
-            "email_verification",
-            config.email_verification_expire_hours,
-        )
-        await EmailService.send_email_verification(user.email, token, user.username)
+        await send_email_verification(user.userId, user.email, user.username)
         # Return success message with email verification info
         return {"detail": Info.USER_CREATED_WITH_EMAIL}
     except Exception as e:
