@@ -17,18 +17,24 @@ class Database:
 
     def __init__(self):
         os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017")
-        os.environ.setdefault("DB_NAME", "local")
+        os.environ.setdefault("DB_NAME", "fasmo")
         mongo_uri = os.getenv("MONGODB_URI")
         db_name = os.getenv("DB_NAME")
+
+        from src.logging_config import create_logger
+
+        self.logger = create_logger("database", __name__)
 
         try:
             self.client = motor.motor_asyncio.AsyncIOMotorClient(
                 mongo_uri, maxPoolSize=50
             )
             self.database = self.client[db_name]
-            print("Connected to database.")
+            self.logger.info(f"Connected to database: {db_name}")
         except Exception as e:
-            print("An error occurred while connecting to database:", str(e))
+            self.logger.exception(
+                f"An error occurred while connecting to the database: {str(e)}"
+            )
 
 
 database_instance = Database.get_instance()

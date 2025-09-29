@@ -1,4 +1,4 @@
-from src.exceptions import Conflict, InternalServerError, UnprocessableContent
+from src.exceptions import BadRequest, Conflict, InternalServerError
 from src.users.constants import ErrorCode
 
 
@@ -10,13 +10,35 @@ class EmailTaken(Conflict):
     DETAIL = ErrorCode.EMAIL_TAKEN
 
 
-class PasswordNotMatch(UnprocessableContent):
+class PasswordNotMatch(BadRequest):
     DETAIL = ErrorCode.PASSWORD_MISMATCH
 
 
-class PasswordRules(UnprocessableContent):
+class PasswordRules(BadRequest):
     DETAIL = ErrorCode.PASSWORD_RULES
 
 
+class EmailAlreadyVerified(BadRequest):
+    DETAIL = "Email has already been verified."
+
+
+class EmailNotVerified(BadRequest):
+    DETAIL = (
+        "Email not verified. Please check your email and click the verification link."
+    )
+
+
+class InvalidVerificationToken(BadRequest):
+    DETAIL = "Verification token is invalid or has expired."
+
+
+class AccountLocked(BadRequest):
+    DETAIL = "Your account has been locked due to too many failed login attempts."
+
+
+class TooManyRequests(BadRequest):
+    DETAIL = "Too many requests. Please try again later."
+
+
 class ServerError(InternalServerError):
-    pass
+    DETAIL = "Internal server error."
