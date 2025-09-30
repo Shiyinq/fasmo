@@ -1,5 +1,15 @@
-# Use Python 3.11.3 as the base image
-FROM python:3.11.3-slim
+# Use Python 3.12.11 as the base image
+FROM python:3.12.11-slim
+
+# Install build tools & deps for pandas/numpy/scipy
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    libopenblas-dev \
+    liblapack-dev \
+    gfortran \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
