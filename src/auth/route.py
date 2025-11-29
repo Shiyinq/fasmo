@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_sso.sso.github import GithubSSO
@@ -22,6 +22,8 @@ from src.auth.exceptions import (
     PasswordPolicyViolationError,
 )
 from src.auth.http_exceptions import (
+    EmailNotFoundOrVerified,
+    IncorrectEmailOrPassword,
     InvalidRefreshToken,
     PasswordPolicyViolation,
     PasswordResetTokenInvalid,
@@ -43,6 +45,7 @@ from src.auth.schemas import (
     VerifyEmailResponse,
 )
 from src.config import config
+from src.exceptions import InternalServerError
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
 from src.users.service import create_user_provider
@@ -107,16 +110,10 @@ async def signin_with_email_and_password(
         return {"access_token": access_token, "token_type": "bearer"}
     except IncorrectCredentialsError:
         logger.warning(f"Incorrect credentials: {form_data.username}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ErrorCode.INCORRECT_EMAIL_OR_PASSWORD
-        )
+        raise IncorrectEmailOrPassword()
     except Exception as e:
         logger.exception(f"Unexpected error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+        raise InternalServerError()
 
 
 @router.post("/auth/refresh", response_model=Token)
@@ -368,10 +365,7 @@ async def send_email_verification(
     if success:
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorCode.EMAIL_NOT_FOUND_OR_VERIFIED,
-        )
+        raise EmailNotFoundOrVerified()
 
 
 @router.post("/auth/verify-email", response_model=VerifyEmailResponse)
@@ -396,10 +390,7 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
         raise VerificationTokenInvalid()
     except Exception as e:
         logger.exception(f"Unexpected error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+        raise InternalServerError()
 
 
 # Password Reset Endpoints
@@ -463,7 +454,4 @@ async def reset_password_endpoint(request_data: PasswordResetConfirmRequest):
         raise PasswordResetTokenInvalid()
     except Exception as e:
         logger.exception(f"Unexpected error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
+        raise InternalServerError()
