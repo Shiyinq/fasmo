@@ -1,9 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends 
 
 from src import dependencies
 from src.auth.schemas import UserCurrent
 from src.logging_config import create_logger
 from src.users import service
+from src.users.exceptions import (
+    UserCreationError,
+    UsernameAlreadyExistsError,
+    EmailAlreadyExistsError,
+    ProviderUserCreationError,
+)
+from src.users.http_exceptions import (
+    UsernameTaken,
+    EmailTaken,
+    ServerError
+)
 from src.users.schemas import UserCreate, UserCreateResponse
 
 router = APIRouter()
@@ -23,17 +34,26 @@ async def signup(user: UserCreate):
         UserCreateResponse: Confirmation message or created user data.
     """
     logger.info(
-        f"[SIGNUP] Incoming request to create user: username={user.username if hasattr(user, 'username') else ''}"
+        f"Incoming request to create user: username={user.username if hasattr(user, 'username') else ''}"
     )
     try:
         new_user = await service.create_user(user)
         logger.info(
-            f"[SIGNUP] User created successfully: user_id={getattr(new_user, 'userId', None)}"
+            f"User created successfully: user_id={getattr(new_user, 'userId', None)}"
         )
         return new_user
+    except UsernameAlreadyExistsError:
+        logger.warning(f"Username already exists: {user.username}")
+        raise UsernameTaken()
+    except EmailAlreadyExistsError:
+        logger.warning(f"Email already exists: {user.email}")
+        raise EmailTaken()
+    except (UserCreationError, ProviderUserCreationError) as e:
+        logger.exception(f"User creation failed: {str(e)}")
+        raise ServerError()
     except Exception as e:
-        logger.exception(f"[SIGNUP] Error creating user: {str(e)}")
-        raise
+        logger.exception(f"Unexpected error: {str(e)}")
+        raise ServerError()
 
 
 @router.get("/users/profile", response_model=UserCurrent)
@@ -45,10 +65,7 @@ async def user_profile(current_user=Depends(dependencies.get_current_user)):
         UserCurrent: The current user's profile data.
     """
     logger.info(
-        f"[PROFILE] Incoming request to get user profile: user_id={current_user.userId}"
+        f"Incoming request to get user profile: user_id={current_user.userId}"
     )
-    try:
-        return current_user
-    except Exception as e:
-        logger.exception(f"[PROFILE] Error getting user profile: {str(e)}")
-        raise
+    
+    return current_user

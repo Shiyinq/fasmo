@@ -24,6 +24,23 @@ class ErrorCode:
     PASSWORD_RESET_TOKEN_INVALID = "Password reset token is invalid or has expired."
 
 
+class DomainErrorCode:
+    AUTHENTICATION_FAILED = "Authentication failed"
+    INCORRECT_CREDENTIALS = "Incorrect email or password"
+    INVALID_REFRESH_TOKEN = "Invalid refresh token"
+    REFRESH_TOKEN_EXPIRED = "Refresh token expired"
+    SUSPICIOUS_ACTIVITY_DETECTED = "Suspicious activity detected"
+    EMAIL_VERIFICATION_FAILED = "Email verification failed"
+    EMAIL_NOT_FOUND_OR_ALREADY_VERIFIED = "Email not found or already verified"
+    VERIFICATION_TOKEN_INVALID = "Verification token is invalid or expired"
+    PASSWORD_RESET_FAILED = "Password reset failed"
+    PASSWORD_RESET_TOKEN_INVALID = "Password reset token is invalid or expired"
+    PASSWORDS_DO_NOT_MATCH = "Passwords do not match"
+    PASSWORD_POLICY_VIOLATION = "Password policy violation"
+    USER_NOT_FOUND = "User not found"
+    TOKEN_VALIDATION_FAILED = "Token validation failed"
+
+
 class Info:
     LOGOUT_SUCCESS = "Logout successful."
     EMAIL_VERIFICATION_SENT = (

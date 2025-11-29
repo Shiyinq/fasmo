@@ -10,7 +10,8 @@ from passlib.context import CryptContext
 from src.auth import repository
 from src.auth.constants import REFRESH_TOKEN_COOKIE_KEY, REFRESH_TOKEN_MAX_AGE
 from src.auth.email_service import EmailService
-from src.auth.exceptions import IncorrectEmailOrPassword
+from src.auth.exceptions import IncorrectCredentialsError
+from src.logging_config import create_logger
 from src.auth.schemas import UserLogin
 from src.auth.security_service import SecurityService
 from src.auth.csrf_service import CSRFService
@@ -21,6 +22,8 @@ from src.utils import hash_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
+
+logger = create_logger("auth_service", __name__)
 
 
 def verify_password(plain_password, hashed_password) -> str:
@@ -62,7 +65,7 @@ async def authenticate_user(
 ) -> Union[UserLogin, bool]:
     user = await get_user(username_or_email)
     if not user and provider is None:
-        raise IncorrectEmailOrPassword()
+        raise IncorrectCredentialsError()
     elif not user and provider:
         return False
 
@@ -80,7 +83,7 @@ async def authenticate_user(
         await SecurityService.handle_failed_login(
             user.userId, user.email, user.username
         )
-        raise IncorrectEmailOrPassword()
+        raise IncorrectCredentialsError()
 
     # Reset failed attempts if login successful
     await SecurityService.reset_failed_login_attempts(user.userId)
@@ -167,7 +170,7 @@ def extract_request_info(request):
     return device, ip, browser, user_agent
 
 
-async def set_refresh_cookie_and_history(response, user_id, request, config):
+async def set_refresh_cookie_and_history(response, user_id, request, config) -> str:
     refresh_token = create_refresh_token()
     hash_refresh_token = hash_token(refresh_token)
     device, ip, browser, user_agent = extract_request_info(request)
@@ -210,11 +213,11 @@ async def verify_email(token: str) -> bool:
 
 
 # Password reset functions
-async def send_password_reset(email: str):
+async def send_password_reset(email: str) -> bool:
     """Send password reset email"""
     user = await get_user(email)
     if not user:
-        return False  # Don't reveal if email exists
+        return False  # Don't reveal if email not exists
 
     token = SecurityService.create_token()
     token_hash = hash_token(token)
@@ -250,7 +253,7 @@ async def reset_password(token: str, new_password: str) -> bool:
     return True
 
 
-async def resend_verification_email(email: str):
+async def resend_verification_email(email: str) -> bool:
     """Resend verification email"""
     user = await get_user(email)
     if not user:

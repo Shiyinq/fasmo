@@ -1,44 +1,34 @@
-from src.exceptions import BadRequest, Conflict, InternalServerError
-from src.users.constants import ErrorCode
+from src.users.constants import DomainErrorCode
 
 
-class UsernameTaken(Conflict):
-    DETAIL = ErrorCode.USERNAME_TAKEN
+class UserCreationError(Exception):
+    def __init__(self, message: str = None):
+        self.message = message or DomainErrorCode.USER_CREATION_FAILED
+        super().__init__(self.message)
 
 
-class EmailTaken(Conflict):
-    DETAIL = ErrorCode.EMAIL_TAKEN
+class UsernameAlreadyExistsError(UserCreationError):
+    def __init__(self):
+        super().__init__(DomainErrorCode.USERNAME_ALREADY_EXISTS)
 
 
-class PasswordNotMatch(BadRequest):
-    DETAIL = ErrorCode.PASSWORD_MISMATCH
+class EmailAlreadyExistsError(UserCreationError):
+    def __init__(self):
+        super().__init__(DomainErrorCode.EMAIL_ALREADY_EXISTS)
 
 
-class PasswordRules(BadRequest):
-    DETAIL = ErrorCode.PASSWORD_RULES
+class ProviderUserCreationError(UserCreationError):
+    def __init__(self):
+        super().__init__(DomainErrorCode.PROVIDER_USER_CREATION_FAILED)
 
 
-class EmailAlreadyVerified(BadRequest):
-    DETAIL = "Email has already been verified."
+class AccountLocked(Exception):
+    def __init__(self):
+        self.message = "Account is locked"
+        super().__init__(self.message)
 
 
-class EmailNotVerified(BadRequest):
-    DETAIL = (
-        "Email not verified. Please check your email and click the verification link."
-    )
-
-
-class InvalidVerificationToken(BadRequest):
-    DETAIL = "Verification token is invalid or has expired."
-
-
-class AccountLocked(BadRequest):
-    DETAIL = "Your account has been locked due to too many failed login attempts."
-
-
-class TooManyRequests(BadRequest):
-    DETAIL = "Too many requests. Please try again later."
-
-
-class ServerError(InternalServerError):
-    DETAIL = "Internal server error."
+class EmailNotVerified(Exception):
+    def __init__(self):
+        self.message = "Email not verified"
+        super().__init__(self.message)

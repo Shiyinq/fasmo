@@ -36,7 +36,7 @@ class EmailService:
         """
 
         try:
-            logger.info(f"[EMAIL_VERIFICATION] Sending verification email to {email}")
+            logger.info(f"Sending verification email to {email}")
             r = resend.Emails.send(
                 {
                     "from": config.email_from,
@@ -45,7 +45,7 @@ class EmailService:
                     "html": html_content,
                 }
             )
-            logger.info(f"[EMAIL_VERIFICATION] Email sent successfully to {email}")
+            logger.info(f"Email sent successfully to {email}")
             return r
         except Exception as e:
             logger.exception(
@@ -79,7 +79,7 @@ class EmailService:
         """
 
         try:
-            logger.info(f"[PASSWORD_RESET] Sending password reset email to {email}")
+            logger.info(f"Sending password reset email to {email}")
             r = resend.Emails.send(
                 {
                     "from": config.email_from,
@@ -88,7 +88,7 @@ class EmailService:
                     "html": html_content,
                 }
             )
-            logger.info(f"[PASSWORD_RESET] Email sent successfully to {email}")
+            logger.info(f"Email sent successfully to {email}")
             return r
         except Exception as e:
             logger.exception(
@@ -126,7 +126,7 @@ class EmailService:
                     "html": html_content,
                 }
             )
-            logger.info(f"[ACCOUNT_LOCKED] Email sent successfully to {email}")
+            logger.info(f"Email sent successfully to {email}")
             return r
         except Exception as e:
             logger.exception(
