@@ -5,7 +5,8 @@ from password_validator import PasswordValidator
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from src.auth.service import get_password_hash
-from src.users.exceptions import PasswordNotMatch, PasswordRules
+from src.users.constants import Info
+from src.users.http_exceptions import PasswordNotMatch, PasswordRules
 
 
 class UserBase(BaseModel):
@@ -70,3 +71,11 @@ class ProviderUserCreate(UserBase):
 
 class UserCreateResponse(BaseModel):
     detail: str
+
+
+class UserCreatedWithEmail(BaseModel):
+    detail: str = Info.USER_CREATED_WITH_EMAIL
+
+
+class UserCreated(BaseModel):
+    detail: str = Info.USER_CREATED

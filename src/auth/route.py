@@ -12,6 +12,16 @@ from src.auth import service
 from src.auth.constants import ErrorCode, Info
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
+    IncorrectCredentialsError,
+    InvalidRefreshTokenError,
+    RefreshTokenExpiredError,
+    SuspiciousActivityError,
+    VerificationTokenInvalidError,
+    PasswordResetTokenInvalidError,
+    PasswordsDoNotMatchError,
+    PasswordPolicyViolationError,
+)
+from src.auth.http_exceptions import (
     InvalidRefreshToken,
     PasswordPolicyViolation,
     PasswordResetTokenInvalid,
@@ -76,7 +86,7 @@ async def signin_with_email_and_password(
         Token: Access token and token type.
     """
     logger.info(
-        f"[SIGNIN] Incoming request: {request.method} {request.url} username={form_data.username}"
+        f"Incoming request: {request.method} {request.url} username={form_data.username}"
     )
     try:
         user = await service.authenticate_user(form_data.username, form_data.password)
@@ -93,11 +103,20 @@ async def signin_with_email_and_password(
             samesite="lax",
             secure=not config.is_env_dev,
         )
-        logger.info(f"[SIGNIN] Login success user_id={user.userId}")
+        logger.info(f"Login success user_id={user.userId}")
         return {"access_token": access_token, "token_type": "bearer"}
+    except IncorrectCredentialsError:
+        logger.warning(f"Incorrect credentials: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=ErrorCode.INCORRECT_EMAIL_OR_PASSWORD
+        )
     except Exception as e:
-        logger.exception(f"[SIGNIN] Error: {str(e)}")
-        raise
+        logger.exception(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 @router.post("/auth/refresh", response_model=Token)
@@ -112,17 +131,17 @@ async def refresh_access_token(request: Request, response: Response):
     Returns:
         Token: New access token and token type.
     """
-    logger.info(f"[REFRESH] Incoming request: {request.method} {request.url}")
+    logger.info(f"Incoming request: {request.method} {request.url}")
     try:
         refresh_token = request.cookies.get("refresh_token")
         if not refresh_token:
-            logger.warning("[REFRESH] No refresh_token in cookie")
+            logger.warning("No refresh_token in cookie")
             raise InvalidRefreshToken()
 
         hash_refresh_token = service.hash_token(refresh_token)
         token_data = await service.get_refresh_token(hash_refresh_token)
         if not token_data:
-            logger.warning("[REFRESH] Token data not found")
+            logger.warning("Token data not found")
             raise InvalidRefreshToken()
 
         device, ip, browser, user_agent = service.extract_request_info(request)
@@ -132,7 +151,7 @@ async def refresh_access_token(request: Request, response: Response):
             or token_data["browser"] != browser
         ):
             logger.warning(
-                f"[REFRESH] Device/IP/Browser mismatch user_id={token_data.get('userId')}"
+                f"Device/IP/Browser mismatch user_id={token_data.get('userId')}"
             )
             await service.delete_refresh_token(hash_refresh_token)
             raise SuspiciousActivity()
@@ -142,7 +161,7 @@ async def refresh_access_token(request: Request, response: Response):
             datetime.now(timezone.utc) - created_at
         ).days >= config.refresh_token_max_age_days:
             logger.info(
-                f"[REFRESH] Refresh token expired user_id={token_data.get('userId')}"
+                f"Refresh token expired user_id={token_data.get('userId')}"
             )
             await service.delete_refresh_token(hash_refresh_token)
             raise RefreshTokenExpired()
@@ -157,7 +176,7 @@ async def refresh_access_token(request: Request, response: Response):
         )
         access_token = service.create_access_token(data={"sub": token_data["userId"]})
         logger.info(
-            f"[REFRESH] Refresh token success user_id={token_data.get('userId')}"
+            f"Refresh token success user_id={token_data.get('userId')}"
         )
         response.set_cookie(
             key="token",
@@ -173,7 +192,7 @@ async def refresh_access_token(request: Request, response: Response):
         
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
-        logger.exception(f"[REFRESH] Error: {str(e)}")
+        logger.exception(f"Error: {str(e)}")
         raise
 
 
@@ -303,7 +322,7 @@ async def logout(request: Request, response: Response):
     Returns:
         LogoutResponse: Message indicating logout success.
     """
-    logger.info(f"[LOGOUT] Incoming request: {request.method} {request.url}")
+    logger.info(f"Incoming request: {request.method} {request.url}")
     try:
         refresh_token = request.cookies.get("refresh_token")
         if refresh_token:
@@ -322,10 +341,10 @@ async def logout(request: Request, response: Response):
             secure=not config.is_env_dev,
             httponly=True,
         )
-        logger.info(f"[LOGOUT] Logout success")
+        logger.info(f"Logout success")
         return LogoutResponse(message=Info.LOGOUT_SUCCESS)
     except Exception as e:
-        logger.exception(f"[LOGOUT] Error: {str(e)}")
+        logger.exception(f"Error: {str(e)}")
         raise
 
 
@@ -366,11 +385,21 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
     Returns:
         VerifyEmailResponse: Message indicating verification result.
     """
-    success = await service.verify_email(request_data.token)
-    if success:
-        return VerifyEmailResponse(message=ErrorCode.EMAIL_VERIFIED_SUCCESS)
-    else:
+    try:
+        success = await service.verify_email(request_data.token)
+        if success:
+            return VerifyEmailResponse(message=ErrorCode.EMAIL_VERIFIED_SUCCESS)
+        else:
+            raise VerificationTokenInvalidError()
+    except VerificationTokenInvalidError:
+        logger.warning(f"Invalid verification token")
         raise VerificationTokenInvalid()
+    except Exception as e:
+        logger.exception(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 
 # Password Reset Endpoints
@@ -402,23 +431,39 @@ async def reset_password_endpoint(request_data: PasswordResetConfirmRequest):
     Returns:
         PasswordResetConfirmResponse: Message indicating password reset result.
     """
-    if request_data.new_password != request_data.confirm_password:
+    try:
+        if request_data.new_password != request_data.confirm_password:
+            raise PasswordsDoNotMatchError()
+
+        # Validate password strength
+        from password_validator import PasswordValidator
+
+        password_rules = PasswordValidator()
+        password_rules.min(8).max(
+            128
+        ).has().uppercase().has().lowercase().has().digits().has().symbols().no().spaces()
+        if not password_rules.validate(request_data.new_password):
+            raise PasswordPolicyViolationError()
+
+        success = await service.reset_password(
+            request_data.token, request_data.new_password
+        )
+        if success:
+            return PasswordResetConfirmResponse(message=ErrorCode.PASSWORD_RESET_SUCCESS)
+        else:
+            raise PasswordResetTokenInvalidError()
+    except PasswordsDoNotMatchError:
+        logger.warning(f"Passwords do not match")
         raise PasswordsNotMatch()
-
-    # Validate password strength
-    from password_validator import PasswordValidator
-
-    password_rules = PasswordValidator()
-    password_rules.min(8).max(
-        128
-    ).has().uppercase().has().lowercase().has().digits().has().symbols().no().spaces()
-    if not password_rules.validate(request_data.new_password):
+    except PasswordPolicyViolationError:
+        logger.warning(f"Password policy violation")
         raise PasswordPolicyViolation()
-
-    success = await service.reset_password(
-        request_data.token, request_data.new_password
-    )
-    if success:
-        return PasswordResetConfirmResponse(message=ErrorCode.PASSWORD_RESET_SUCCESS)
-    else:
+    except PasswordResetTokenInvalidError:
+        logger.warning(f"Invalid password reset token")
         raise PasswordResetTokenInvalid()
+    except Exception as e:
+        logger.exception(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )

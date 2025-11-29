@@ -1,38 +1,49 @@
-from src.auth.constants import ErrorCode
-from src.exceptions import BadRequest, NotAuthenticated
+from src.auth.constants import DomainErrorCode
 
 
-class IncorrectEmailOrPassword(NotAuthenticated):
-    DETAIL = ErrorCode.INCORRECT_EMAIL_OR_PASSWORD
+class IncorrectCredentialsError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.INCORRECT_CREDENTIALS
+        super().__init__(self.message)
 
 
-class InvalidRefreshToken(NotAuthenticated):
-    DETAIL = ErrorCode.INVALID_REFRESH_TOKEN
+class InvalidRefreshTokenError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.INVALID_REFRESH_TOKEN
+        super().__init__(self.message)
 
 
-class InvalidJWTToken(NotAuthenticated):
-    DETAIL = ErrorCode.INVALID_JWT_TOKEN
+class RefreshTokenExpiredError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.REFRESH_TOKEN_EXPIRED
+        super().__init__(self.message)
 
 
-class RefreshTokenExpired(NotAuthenticated):
-    DETAIL = ErrorCode.REFRESH_TOKEN_EXPIRED
+class SuspiciousActivityError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.SUSPICIOUS_ACTIVITY_DETECTED
+        super().__init__(self.message)
 
 
-class SuspiciousActivity(NotAuthenticated):
-    DETAIL = ErrorCode.SUSPICIOUS_ACTIVITY
+class VerificationTokenInvalidError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.VERIFICATION_TOKEN_INVALID
+        super().__init__(self.message)
 
 
-class VerificationTokenInvalid(BadRequest):
-    DETAIL = ErrorCode.VERIFICATION_TOKEN_INVALID
+class PasswordResetTokenInvalidError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.PASSWORD_RESET_TOKEN_INVALID
+        super().__init__(self.message)
 
 
-class PasswordResetTokenInvalid(BadRequest):
-    DETAIL = ErrorCode.PASSWORD_RESET_TOKEN_INVALID
+class PasswordsDoNotMatchError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.PASSWORDS_DO_NOT_MATCH
+        super().__init__(self.message)
 
 
-class PasswordsNotMatch(BadRequest):
-    DETAIL = ErrorCode.PASSWORDS_NOT_MATCH
-
-
-class PasswordPolicyViolation(BadRequest):
-    DETAIL = ErrorCode.PASSWORD_POLICY_VIOLATION
+class PasswordPolicyViolationError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.PASSWORD_POLICY_VIOLATION
+        super().__init__(self.message)

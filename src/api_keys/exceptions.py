@@ -1,18 +1,25 @@
-from src.api_keys.constants import ErrorCode
-from src.exceptions import InternalServerError, NotFound, BadRequest
+from src.api_keys.constants import DomainErrorCode
 
 
-class APIKeyNotFound(NotFound):
-    DETAIL = ErrorCode.API_KEY_NOT_FOUND
+class APIKeyCreationError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.API_KEY_CREATION_FAILED
+        super().__init__(self.message)
 
 
-class APIKeyCreateError(InternalServerError):
-    DETAIL = ErrorCode.API_KEY_CREATE_ERROR
+class APIKeyDeletionError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.API_KEY_DELETION_FAILED
+        super().__init__(self.message)
 
 
-class APIKeyDeleteError(InternalServerError):
-    DETAIL = ErrorCode.API_KEY_DELETE_ERROR
+class APIKeyNotFoundError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.API_KEY_NOT_FOUND
+        super().__init__(self.message)
 
 
-class InvalidAPIKey(BadRequest):
-    DETAIL = ErrorCode.INVALID_API_KEY
+class InvalidAPIKeyError(Exception):
+    def __init__(self):
+        self.message = DomainErrorCode.INVALID_API_KEY
+        super().__init__(self.message)
