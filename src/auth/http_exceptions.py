@@ -1,4 +1,4 @@
-from src.exceptions import BadRequest, NotAuthenticated
+from src.exceptions import BadRequest, NotAuthenticated, NotFound, PermissionDenied
 from src.auth.constants import ErrorCode
 
 
@@ -20,6 +20,14 @@ class RefreshTokenExpired(NotAuthenticated):
 
 class SuspiciousActivity(NotAuthenticated):
     DETAIL = ErrorCode.SUSPICIOUS_ACTIVITY
+
+
+class InvalidCSRFToken(PermissionDenied):
+    DETAIL = "Invalid CSRF token"
+
+
+class EmailNotFoundOrVerified(NotFound):
+    DETAIL = ErrorCode.EMAIL_NOT_FOUND_OR_VERIFIED
 
 
 class VerificationTokenInvalid(BadRequest):
