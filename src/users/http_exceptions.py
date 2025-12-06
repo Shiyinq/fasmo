@@ -1,4 +1,4 @@
-from src.exceptions import BadRequest, Conflict, InternalServerError
+from src.http_exceptions import BadRequest, Conflict, InternalServerError
 from src.users.constants import ErrorCode
 
 

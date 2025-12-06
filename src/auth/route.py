@@ -45,7 +45,7 @@ from src.auth.schemas import (
     VerifyEmailResponse,
 )
 from src.config import config
-from src.exceptions import InternalServerError
+from src.http_exceptions import InternalServerError
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
 from src.users.service import create_user_provider
