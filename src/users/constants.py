@@ -13,6 +13,8 @@ class DomainErrorCode:
     EMAIL_VERIFICATION_FAILED = "Email verification failed"
     USER_NOT_FOUND = "User not found"
     INVALID_USER_DATA = "Invalid user data"
+    ACCOUNT_LOCKED = "Account is locked"
+    EMAIL_NOT_VERIFIED = "Email not verified"
 
 
 class Info:

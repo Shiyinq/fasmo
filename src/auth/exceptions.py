@@ -1,49 +1,34 @@
 from src.auth.constants import DomainErrorCode
+from src.exceptions import DomainException
 
 
-class IncorrectCredentialsError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.INCORRECT_CREDENTIALS
-        super().__init__(self.message)
+class IncorrectCredentialsError(DomainException):
+    ERROR_CODE = DomainErrorCode.INCORRECT_CREDENTIALS
 
 
-class InvalidRefreshTokenError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.INVALID_REFRESH_TOKEN
-        super().__init__(self.message)
+class InvalidRefreshTokenError(DomainException):
+    ERROR_CODE = DomainErrorCode.INVALID_REFRESH_TOKEN
 
 
-class RefreshTokenExpiredError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.REFRESH_TOKEN_EXPIRED
-        super().__init__(self.message)
+class RefreshTokenExpiredError(DomainException):
+    ERROR_CODE = DomainErrorCode.REFRESH_TOKEN_EXPIRED
 
 
-class SuspiciousActivityError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.SUSPICIOUS_ACTIVITY_DETECTED
-        super().__init__(self.message)
+class SuspiciousActivityError(DomainException):
+    ERROR_CODE = DomainErrorCode.SUSPICIOUS_ACTIVITY_DETECTED
 
 
-class VerificationTokenInvalidError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.VERIFICATION_TOKEN_INVALID
-        super().__init__(self.message)
+class VerificationTokenInvalidError(DomainException):
+    ERROR_CODE = DomainErrorCode.VERIFICATION_TOKEN_INVALID
 
 
-class PasswordResetTokenInvalidError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.PASSWORD_RESET_TOKEN_INVALID
-        super().__init__(self.message)
+class PasswordResetTokenInvalidError(DomainException):
+    ERROR_CODE = DomainErrorCode.PASSWORD_RESET_TOKEN_INVALID
 
 
-class PasswordsDoNotMatchError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.PASSWORDS_DO_NOT_MATCH
-        super().__init__(self.message)
+class PasswordsDoNotMatchError(DomainException):
+    ERROR_CODE = DomainErrorCode.PASSWORDS_DO_NOT_MATCH
 
 
-class PasswordPolicyViolationError(Exception):
-    def __init__(self):
-        self.message = DomainErrorCode.PASSWORD_POLICY_VIOLATION
-        super().__init__(self.message)
+class PasswordPolicyViolationError(DomainException):
+    ERROR_CODE = DomainErrorCode.PASSWORD_POLICY_VIOLATION
