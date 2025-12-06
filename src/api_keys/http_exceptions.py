@@ -1,4 +1,4 @@
-from src.exceptions import BadRequest, InternalServerError, NotFound
+from src.http_exceptions import BadRequest, InternalServerError, NotFound
 from src.api_keys.constants import ErrorCode
 
 

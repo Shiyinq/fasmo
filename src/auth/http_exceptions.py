@@ -1,4 +1,4 @@
-from src.exceptions import BadRequest, NotAuthenticated, NotFound, PermissionDenied
+from src.http_exceptions import BadRequest, NotAuthenticated, NotFound, PermissionDenied
 from src.auth.constants import ErrorCode
 
 
