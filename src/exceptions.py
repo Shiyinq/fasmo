@@ -3,18 +3,18 @@ from typing import Optional
 
 class DomainException(Exception):
     """
-    Base class untuk semua domain exceptions.
-    Menyederhanakan penulisan exception dengan auto-set message dari ERROR_CODE.
+    Base class for all domain exceptions.
+    Simplifies exception writing by auto-setting message from ERROR_MESSAGE.
     """
     
-    ERROR_CODE: Optional[str] = None
+    ERROR_MESSAGE: Optional[str] = None
     
     def __init__(self, message: Optional[str] = None):
         """
-        Initialize exception dengan message.
+        Initialize exception with message.
         
         Args:
-            message: Custom message. Jika None, akan menggunakan ERROR_CODE dari class attribute.
+            message: Custom message. If None, will use ERROR_MESSAGE from class attribute.
         """
-        self.message = message or self.ERROR_CODE or "An error occurred"
+        self.message = message or self.ERROR_MESSAGE or "An error occurred"
         super().__init__(self.message)

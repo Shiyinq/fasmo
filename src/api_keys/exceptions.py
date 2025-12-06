@@ -3,16 +3,16 @@ from src.exceptions import DomainException
 
 
 class APIKeyCreationError(DomainException):
-    ERROR_CODE = DomainErrorCode.API_KEY_CREATION_FAILED
+    ERROR_MESSAGE = DomainErrorCode.API_KEY_CREATION_FAILED
 
 
 class APIKeyDeletionError(DomainException):
-    ERROR_CODE = DomainErrorCode.API_KEY_DELETION_FAILED
+    ERROR_MESSAGE = DomainErrorCode.API_KEY_DELETION_FAILED
 
 
 class APIKeyNotFoundError(DomainException):
-    ERROR_CODE = DomainErrorCode.API_KEY_NOT_FOUND
+    ERROR_MESSAGE = DomainErrorCode.API_KEY_NOT_FOUND
 
 
 class InvalidAPIKeyError(DomainException):
-    ERROR_CODE = DomainErrorCode.INVALID_API_KEY
+    ERROR_MESSAGE = DomainErrorCode.INVALID_API_KEY

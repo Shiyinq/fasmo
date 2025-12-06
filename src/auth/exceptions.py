@@ -3,32 +3,32 @@ from src.exceptions import DomainException
 
 
 class IncorrectCredentialsError(DomainException):
-    ERROR_CODE = DomainErrorCode.INCORRECT_CREDENTIALS
+    ERROR_MESSAGE = DomainErrorCode.INCORRECT_CREDENTIALS
 
 
 class InvalidRefreshTokenError(DomainException):
-    ERROR_CODE = DomainErrorCode.INVALID_REFRESH_TOKEN
+    ERROR_MESSAGE = DomainErrorCode.INVALID_REFRESH_TOKEN
 
 
 class RefreshTokenExpiredError(DomainException):
-    ERROR_CODE = DomainErrorCode.REFRESH_TOKEN_EXPIRED
+    ERROR_MESSAGE = DomainErrorCode.REFRESH_TOKEN_EXPIRED
 
 
 class SuspiciousActivityError(DomainException):
-    ERROR_CODE = DomainErrorCode.SUSPICIOUS_ACTIVITY_DETECTED
+    ERROR_MESSAGE = DomainErrorCode.SUSPICIOUS_ACTIVITY_DETECTED
 
 
 class VerificationTokenInvalidError(DomainException):
-    ERROR_CODE = DomainErrorCode.VERIFICATION_TOKEN_INVALID
+    ERROR_MESSAGE = DomainErrorCode.VERIFICATION_TOKEN_INVALID
 
 
 class PasswordResetTokenInvalidError(DomainException):
-    ERROR_CODE = DomainErrorCode.PASSWORD_RESET_TOKEN_INVALID
+    ERROR_MESSAGE = DomainErrorCode.PASSWORD_RESET_TOKEN_INVALID
 
 
 class PasswordsDoNotMatchError(DomainException):
-    ERROR_CODE = DomainErrorCode.PASSWORDS_DO_NOT_MATCH
+    ERROR_MESSAGE = DomainErrorCode.PASSWORDS_DO_NOT_MATCH
 
 
 class PasswordPolicyViolationError(DomainException):
-    ERROR_CODE = DomainErrorCode.PASSWORD_POLICY_VIOLATION
+    ERROR_MESSAGE = DomainErrorCode.PASSWORD_POLICY_VIOLATION
