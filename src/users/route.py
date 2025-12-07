@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends 
+from fastapi import APIRouter, Depends, BackgroundTasks 
 
 from src import dependencies
 from src.auth.schemas import UserCurrent
@@ -12,7 +12,7 @@ logger = create_logger("users", __name__)
 
 
 @router.post("/users/signup", status_code=201, response_model=UserCreateResponse)
-async def signup(user: UserCreate):
+async def signup(user: UserCreate, background_tasks: BackgroundTasks):
     """
     Register a new user account.
     """
@@ -20,7 +20,7 @@ async def signup(user: UserCreate):
         f"Incoming request to create user: username={user.username if hasattr(user, 'username') else ''}"
     )
     
-    new_user = await service.create_user(user)
+    new_user = await service.create_user(user, background_tasks)
     
     logger.info(
         f"User created successfully: user_id={getattr(new_user, 'userId', None)}"

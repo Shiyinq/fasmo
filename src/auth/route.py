@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_sso.sso.github import GithubSSO
@@ -315,7 +315,7 @@ async def logout(request: Request, response: Response):
 @router.post("/auth/send-verification", response_model=EmailVerificationResponse)
 @limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def send_email_verification(
-    request: Request, request_data: EmailVerificationRequest
+    request: Request, request_data: EmailVerificationRequest, background_tasks: BackgroundTasks
 ):
     """
     Send a verification email to the user for email verification.
@@ -327,7 +327,7 @@ async def send_email_verification(
     Returns:
         EmailVerificationResponse: Message indicating email sent or error.
     """
-    success = await service.resend_verification_email(request_data.email)
+    success = await service.resend_verification_email(request_data.email, background_tasks)
     if success:
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
@@ -335,10 +335,8 @@ async def send_email_verification(
         # The logic was: if not success, raise EmailNotFoundOrVerified
         # Since EmailNotFoundOrVerified is an HTTP Exception, we should ideally use a Domain Exception if we want to be consistent.
         # However, checking src/auth/http_exceptions.py, EmailNotFoundOrVerified is likely a DetailedHTTPException.
-        # We can keep raising it directly or create a Domain Exception.
-        # For strictness, let's keep raising the HTTP Exception if there is no Domain equivalent yet,
-        # OR create a Domain equivalent.
-        # Let's see if we can just raise the HTTP exception for now as it inherits from DetailedHTTPException which is handled.
+        # We can keep raising it directly or create a Domain equivalent.
+        # For strictness, let's keep raising the HTTP Exception for now as it inherits from DetailedHTTPException which is handled.
         # But wait, DetailedHTTPException is handled by `detailed_http_exception_handler`.
         # So raising it is fine!
         raise EmailNotFoundOrVerified()
@@ -366,7 +364,7 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
 # Password Reset Endpoints
 @router.post("/auth/forgot-password", response_model=PasswordResetResponse)
 @limiter.limit(f"{config.auth_requests_per_minute}/minute")
-async def forgot_password(request: Request, request_data: PasswordResetRequest):
+async def forgot_password(request: Request, request_data: PasswordResetRequest, background_tasks: BackgroundTasks):
     """
     Send a password reset email to the user.
 
@@ -377,7 +375,7 @@ async def forgot_password(request: Request, request_data: PasswordResetRequest):
     Returns:
         PasswordResetResponse: Message indicating reset email sent.
     """
-    await service.send_password_reset(request_data.email)
+    await service.send_password_reset(request_data.email, background_tasks)
     return PasswordResetResponse(message=ErrorCode.PASSWORD_RESET_SENT)
 
 

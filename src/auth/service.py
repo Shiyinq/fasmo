@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
 
+from fastapi import BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from passlib.context import CryptContext
@@ -207,14 +208,15 @@ async def set_refresh_cookie_and_history(response, user_id, request, config) -> 
 
 
 # Email verification functions
-async def send_email_verification(user_id: str, email: str, username: str):
+async def send_email_verification(user_id: str, email: str, username: str, background_tasks: BackgroundTasks):
     """Send email verification"""
     token = SecurityService.create_token()
     token_hash = hash_token(token)
     await SecurityService.save_token(
         user_id, token_hash, "email_verification", config.email_verification_expire_hours
     )
-    await EmailService.send_email_verification(email, token, username)
+    # Run email sending in background
+    background_tasks.add_task(EmailService.send_email_verification, email, token, username)
     return token
 
 
@@ -226,7 +228,7 @@ async def verify_email(token: str) -> bool:
 
 
 # Password reset functions
-async def send_password_reset(email: str) -> bool:
+async def send_password_reset(email: str, background_tasks: BackgroundTasks) -> bool:
     """Send password reset email"""
     user = await get_user(email)
     if not user:
@@ -237,7 +239,7 @@ async def send_password_reset(email: str) -> bool:
     await SecurityService.save_token(
         user.userId, token_hash, "password_reset", config.password_reset_expire_hours
     )
-    await EmailService.send_password_reset(email, token, user.username)
+    background_tasks.add_task(EmailService.send_password_reset, email, token, user.username)
     return True
 
 
@@ -266,7 +268,7 @@ async def reset_password(token: str, new_password: str) -> bool:
     return True
 
 
-async def resend_verification_email(email: str) -> bool:
+async def resend_verification_email(email: str, background_tasks: BackgroundTasks) -> bool:
     """Resend verification email"""
     user = await get_user(email)
     if not user:
@@ -275,5 +277,5 @@ async def resend_verification_email(email: str) -> bool:
     if user.isEmailVerified:
         return False  # Already verified
 
-    await send_email_verification(user.userId, user.email, user.username)
+    await send_email_verification(user.userId, user.email, user.username, background_tasks)
     return True
