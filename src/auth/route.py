@@ -94,7 +94,6 @@ async def signin_with_email_and_password(
         samesite="lax",
         secure=not config.is_env_dev,
     )
-    logger.info(f"Login success user_id={user.userId}")
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -139,9 +138,6 @@ async def refresh_access_token(request: Request, response: Response):
     if (
         datetime.now(timezone.utc) - created_at
     ).days >= config.refresh_token_max_age_days:
-        logger.info(
-            f"Refresh token expired user_id={token_data.get('userId')}"
-        )
         await service.delete_refresh_token(hash_refresh_token)
         raise RefreshTokenExpiredError()
 
@@ -154,9 +150,6 @@ async def refresh_access_token(request: Request, response: Response):
         user_agent_raw=user_agent,
     )
     access_token = service.create_access_token(data={"sub": token_data["userId"]})
-    logger.info(
-        f"Refresh token success user_id={token_data.get('userId')}"
-    )
     response.set_cookie(
         key="token",
         value=access_token,
@@ -305,7 +298,6 @@ async def logout(request: Request, response: Response):
         secure=not config.is_env_dev,
         httponly=True,
     )
-    logger.info(f"Logout success")
     return LogoutResponse(message=Info.LOGOUT_SUCCESS)
 
 
