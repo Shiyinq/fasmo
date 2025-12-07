@@ -100,7 +100,14 @@ async def domain_exception_handler(request: Request, exc: DomainException):
         return await detailed_http_exception_handler(request, APIKeyNotFound())
 
     # Default fallback
-    logger.error(f"Unhandled domain exception: {str(exc)}")
+    # Sanitize error message for logging to avoid leaking potential secrets in connection strings etc.
+    error_msg = str(exc)
+    # Basic sanitization: remove potential secret keys or passwords if they appear in standard formats
+    # This is a basic filter, can be expanded.
+    if "password" in error_msg.lower() or "secret" in error_msg.lower() or "key" in error_msg.lower():
+         error_msg = "Error details redacted for security"
+    
+    logger.error(f"Unhandled domain/unexpected exception: {type(exc).__name__}: {error_msg}")
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal Server Error"},
