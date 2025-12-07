@@ -1,7 +1,6 @@
-import os
 import uuid
+from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -10,26 +9,31 @@ from slowapi.util import get_remote_address
 
 from src.api import router as api_router
 from src.config import config
+from src.database import database_instance
 from src.logging_config import request_id_ctx_var
 
-load_dotenv(verbose=True)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Connect to the database
+    await database_instance.connect()
+    yield
+    # Shutdown: Close the database connection
+    await database_instance.close()
+
 
 # Setup rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-app = FastAPI(title="Fasmo API", openapi_url="/api/openapi.json")
+app = FastAPI(
+    title="Fasmo API", 
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan
+)
 
 # Add rate limiter to app
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# Global rate limiting
-# @app.middleware("http")
-# async def global_rate_limit(request: Request, call_next):
-#     # Apply rate limit to all endpoints
-#     await limiter.check_request_limit(request, f"{config.max_requests_per_minute}/minute")
-#     response = await call_next(request)
-#     return response
 
 
 @app.middleware("http")

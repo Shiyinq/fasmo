@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from src.auth.email_service import EmailService
 from src.config import config
-from src.database import database
+from src.database import database_instance
 
 
 class SecurityService:
@@ -17,7 +17,7 @@ class SecurityService:
     async def save_token(user_id: str, token: str, token_type: str, expire_hours: int):
         """Save verification token to general collection"""
         # Delete old tokens for this user and type first
-        await database["verification_tokens"].delete_many(
+        await database_instance.database["verification_tokens"].delete_many(
             {"userId": user_id, "tokenType": token_type}
         )
 
@@ -29,19 +29,19 @@ class SecurityService:
             "expiresAt": expires_at,
             "createdAt": datetime.now(timezone.utc),
         }
-        await database["verification_tokens"].insert_one(data)
+        await database_instance.database["verification_tokens"].insert_one(data)
 
     @staticmethod
     async def get_token(token: str, token_type: str) -> Optional[Dict[str, Any]]:
         """Get token data by type"""
-        return await database["verification_tokens"].find_one(
+        return await database_instance.database["verification_tokens"].find_one(
             {"hashToken": token, "tokenType": token_type}
         )
 
     @staticmethod
     async def delete_token(token: str, token_type: str):
         """Delete token by type"""
-        await database["verification_tokens"].delete_one(
+        await database_instance.database["verification_tokens"].delete_one(
             {"hashToken": token, "tokenType": token_type}
         )
 
@@ -75,7 +75,7 @@ class SecurityService:
             return None
 
         # Mark user email as verified
-        await database["users"].update_one(
+        await database_instance.database["users"].update_one(
             {"userId": token_data["userId"]}, {"$set": {"isEmailVerified": True}}
         )
 
@@ -87,14 +87,14 @@ class SecurityService:
     @staticmethod
     async def increment_failed_login_attempts(user_id: str):
         """Increment failed login attempts count"""
-        await database["users"].update_one(
+        await database_instance.database["users"].update_one(
             {"userId": user_id}, {"$inc": {"failedLoginAttempts": 1}}
         )
 
     @staticmethod
     async def reset_failed_login_attempts(user_id: str):
         """Reset failed login attempts count"""
-        await database["users"].update_one(
+        await database_instance.database["users"].update_one(
             {"userId": user_id}, {"$set": {"failedLoginAttempts": 0}}
         )
 
@@ -103,7 +103,7 @@ class SecurityService:
         """Lock account temporarily"""
         locked_until = datetime.now(timezone.utc) + timedelta(minutes=duration_minutes)
 
-        await database["users"].update_one(
+        await database_instance.database["users"].update_one(
             {"userId": user_id},
             {"$set": {"isAccountLocked": True, "accountLockedUntil": locked_until}},
         )
@@ -111,7 +111,7 @@ class SecurityService:
     @staticmethod
     async def unlock_account(user_id: str):
         """Unlock account"""
-        await database["users"].update_one(
+        await database_instance.database["users"].update_one(
             {"userId": user_id},
             {
                 "$set": {
@@ -125,7 +125,7 @@ class SecurityService:
     @staticmethod
     async def check_account_lock_status(user_id: str) -> Dict[str, Any]:
         """Check account lock status"""
-        user = await database["users"].find_one({"userId": user_id})
+        user = await database_instance.database["users"].find_one({"userId": user_id})
         if not user:
             return {"is_locked": False, "locked_until": None}
 
@@ -151,7 +151,7 @@ class SecurityService:
         await SecurityService.increment_failed_login_attempts(user_id)
 
         # Check if account needs to be locked
-        user = await database["users"].find_one({"userId": user_id})
+        user = await database_instance.database["users"].find_one({"userId": user_id})
         if user and user.get("failedLoginAttempts", 0) >= config.max_login_attempts:
             await SecurityService.lock_account(user_id, config.account_lockout_minutes)
 
@@ -164,7 +164,7 @@ class SecurityService:
     async def delete_expired_verification_tokens():
         """Delete expired verification tokens"""
         current_time = datetime.now(timezone.utc)
-        await database["verification_tokens"].delete_many(
+        await database_instance.database["verification_tokens"].delete_many(
             {"expiresAt": {"$lt": current_time}}
         )
 
@@ -182,7 +182,7 @@ class SecurityService:
 
         # Find expired refresh tokens
         expired_tokens = (
-            await database["refresh_tokens"]
+            await database_instance.database["refresh_tokens"]
             .find(
                 {
                     "createdAt": {

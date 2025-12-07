@@ -1,90 +1,174 @@
-import os
+from typing import List
 
-from dotenv import load_dotenv
-
-load_dotenv(verbose=True)
-
-
-def validate_required_env_vars():
-    required_vars = [
-        "SECRET_KEY", "MONGODB_URI", "ALGORITHM",
-        "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI",
-        "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "GITHUB_REDIRECT_URI",
-        "FRONTEND_URL", "RESEND_API_KEY", "EMAIL_FROM", "ORIGINS"
-    ]
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables: {missing_vars}")
+from pydantic import computed_field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def get_cors_origins(origins_str: str, is_dev: bool = False) -> list:
-    if not origins_str:
-        if is_dev:
-            return ["http://localhost:5050", "http://localhost:5173"]
-        else:
-            raise ValueError("ORIGINS environment variable is required in production")
+class Settings(BaseSettings):
+    # App
+    ENV: str = "dev"
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_MAX_AGE_DAYS: int = 30
+
+    # DB
+    MONGODB_URI: str
+    DB_NAME: str = "fasmo"
+
+    # External Auth
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
+    GITHUB_CLIENT_ID: str
+    GITHUB_CLIENT_SECRET: str
+    GITHUB_REDIRECT_URI: str
+
+    # Frontend
+    FRONTEND_URL: str
+    ORIGINS: str
+
+    # Email
+    RESEND_API_KEY: str
+    EMAIL_FROM: str = "onboarding@resend.dev"
+    EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
+    PASSWORD_RESET_EXPIRE_HOURS: int = 1
+
+    # Security
+    MAX_LOGIN_ATTEMPTS: int = 5
+    ACCOUNT_LOCKOUT_MINUTES: int = 15
+    MAX_REQUESTS_PER_MINUTE: int = 60
+
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_PATH: str = "/var/log/fasmo/"
+
+    # Internal
+    API_KEY_PREFIX: str = "ffk_"
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=True
+    )
+
+    @property
+    def is_env_dev(self) -> bool:
+        return self.ENV == "dev"
+
+    @computed_field
+    @property
+    def cors_origins(self) -> List[str]:
+        if not self.ORIGINS:
+            if self.is_env_dev:
+                return ["http://localhost:5050", "http://localhost:5173"]
+            else:
+                raise ValueError(
+                    "ORIGINS environment variable is required in production"
+                )
+
+        origins = [origin.strip() for origin in self.ORIGINS.split(",") if origin.strip()]
+
+        if not self.is_env_dev:
+            for origin in origins:
+                if origin == "*":
+                    raise ValueError("Wildcard (*) origins are not allowed in production")
+                if not origin.startswith("https://"):
+                    raise ValueError(
+                        f"Only HTTPS origins allowed in production: {origin}"
+                    )
+
+        return origins
+
+    @property
+    def mongo_uri(self) -> str:
+        return self.MONGODB_URI
+
+    @property
+    def db_name(self) -> str:
+        return self.DB_NAME
+
+    @property
+    def secret_key(self) -> str:
+        return self.SECRET_KEY
+
+    @property
+    def algorithm(self) -> str:
+        return self.ALGORITHM
+
+    @property
+    def access_token_expire_minutes(self) -> int:
+        return self.ACCESS_TOKEN_EXPIRE_MINUTES
+
+    @property
+    def refresh_token_max_age_days(self) -> int:
+        return self.REFRESH_TOKEN_MAX_AGE_DAYS
+
+    @property
+    def google_client_id(self) -> str:
+        return self.GOOGLE_CLIENT_ID
+
+    @property
+    def google_client_secret(self) -> str:
+        return self.GOOGLE_CLIENT_SECRET
+
+    @property
+    def google_redirect_uri(self) -> str:
+        return self.GOOGLE_REDIRECT_URI
     
-    origins = [origin.strip() for origin in origins_str.split(",") if origin.strip()]
+    @property
+    def github_client_id(self) -> str:
+        return self.GITHUB_CLIENT_ID
+
+    @property
+    def github_client_secret(self) -> str:
+        return self.GITHUB_CLIENT_SECRET
+
+    @property
+    def github_redirect_uri(self) -> str:
+        return self.GITHUB_REDIRECT_URI
+
+    @property
+    def frontend_url(self) -> str:
+        return self.FRONTEND_URL
+
+    @property
+    def resend_api_key(self) -> str:
+        return self.RESEND_API_KEY
     
-    if not is_dev:
-        for origin in origins:
-            if origin == "*":
-                raise ValueError("Wildcard (*) origins are not allowed in production")
-            if not origin.startswith("https://"):
-                raise ValueError(f"Only HTTPS origins allowed in production: {origin}")
+    @property
+    def email_from(self) -> str:
+        return self.EMAIL_FROM
     
-    return origins
+    @property
+    def email_verification_expire_hours(self) -> int:
+        return self.EMAIL_VERIFICATION_EXPIRE_HOURS
+    
+    @property
+    def password_reset_expire_hours(self) -> int:
+        return self.PASSWORD_RESET_EXPIRE_HOURS
+    
+    @property
+    def max_login_attempts(self) -> int:
+        return self.MAX_LOGIN_ATTEMPTS
+    
+    @property
+    def account_lockout_minutes(self) -> int:
+        return self.ACCOUNT_LOCKOUT_MINUTES
+    
+    @property
+    def max_requests_per_minute(self) -> int:
+        return self.MAX_REQUESTS_PER_MINUTE
+    
+    @property
+    def log_level(self) -> str:
+        return self.LOG_LEVEL
+    
+    @property
+    def log_path(self) -> str:
+        return self.LOG_PATH
+    
+    @property
+    def api_key_prefix(self) -> str:
+        return self.API_KEY_PREFIX
 
 
-class Config:
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        validate_required_env_vars()
-        self.mongo_uri = os.getenv("MONGODB_URI")
-        self.secret_key = os.getenv("SECRET_KEY")
-        self.algorithm = os.getenv("ALGORITHM")
-        self.access_token_expire_minutes = int(
-            os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15")
-        )
-        self.refresh_token_max_age_days = int(
-            os.getenv("REFRESH_TOKEN_MAX_AGE_DAYS", "30")
-        )
-        self.google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-        self.google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-        self.google_redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
-        self.github_client_id = os.getenv("GITHUB_CLIENT_ID")
-        self.github_client_secret = os.getenv("GITHUB_CLIENT_SECRET")
-        self.github_redirect_uri = os.getenv("GITHUB_REDIRECT_URI")
-        self.frontend_url = os.getenv("FRONTEND_URL")
-        self.is_env_dev = os.getenv("ENV", "dev") == "dev"
-
-        # Email configuration
-        self.resend_api_key = os.getenv("RESEND_API_KEY")
-        self.email_from = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
-        self.email_verification_expire_hours = int(
-            os.getenv("EMAIL_VERIFICATION_EXPIRE_HOURS", "24")
-        )
-        self.password_reset_expire_hours = int(
-            os.getenv("PASSWORD_RESET_EXPIRE_HOURS", "1")
-        )
-
-        # Security configuration
-        self.max_login_attempts = int(os.getenv("MAX_LOGIN_ATTEMPTS", "5"))
-        self.account_lockout_minutes = int(os.getenv("ACCOUNT_LOCKOUT_MINUTES", "15"))
-        self.max_requests_per_minute = int(os.getenv("MAX_REQUESTS_PER_MINUTE", "60"))
-        self.log_level = os.getenv("LOG_LEVEL", "INFO")
-        self.log_path = os.getenv("LOG_PATH", "/var/log/fasmo/")
-        
-        # CORS configuration
-        self.cors_origins = get_cors_origins(os.getenv("ORIGINS", ""), self.is_env_dev)
-
-        # API Key Prefix
-        self.api_key_prefix = "ffk_"
-
-config = Config()
+config = Settings()

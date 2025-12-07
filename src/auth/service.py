@@ -16,7 +16,7 @@ from src.auth.schemas import UserLogin
 from src.auth.security_service import SecurityService
 from src.auth.csrf_service import CSRFService
 from src.config import config
-from src.database import database
+from src.database import database_instance
 from src.users.exceptions import AccountLocked, EmailNotVerified
 from src.utils import hash_token
 
@@ -237,7 +237,7 @@ async def reset_password(token: str, new_password: str) -> bool:
 
     # Update password using userId
     hashed_password = get_password_hash(new_password)
-    await database["users"].update_one(
+    await database_instance.database["users"].update_one(
         {"userId": token_data["userId"]}, {"$set": {"password": hashed_password}}
     )
 
@@ -245,7 +245,7 @@ async def reset_password(token: str, new_password: str) -> bool:
     await SecurityService.delete_token(token_hash, "password_reset")
 
     # Reset failed attempts
-    user = await database["users"].find_one({"userId": token_data["userId"]})
+    user = await database_instance.database["users"].find_one({"userId": token_data["userId"]})
     if user:
         await SecurityService.reset_failed_login_attempts(user["userId"])
         await SecurityService.unlock_account(user["userId"])
