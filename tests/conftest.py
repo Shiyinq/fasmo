@@ -51,3 +51,22 @@ async def client(db):
         transport=ASGITransport(app=app, client=("127.0.0.1", 12345)), base_url="http://test"
     ) as ac:
         yield ac
+
+@pytest.fixture
+def mock_resend_email(monkeypatch):
+    """
+    Mock resend.Emails.send to prevent sending actual emails.
+    """
+    class MockResponse:
+        def __init__(self):
+            self.id = "mock_id"
+
+    mock_calls = []
+
+    def mock_send(params):
+        mock_calls.append(params)
+        return MockResponse()
+
+    monkeypatch.setattr("resend.Emails.send", mock_send)
+    return mock_calls
+
