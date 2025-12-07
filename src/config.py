@@ -37,7 +37,8 @@ class Settings(BaseSettings):
     # Security
     MAX_LOGIN_ATTEMPTS: int = 5
     ACCOUNT_LOCKOUT_MINUTES: int = 15
-    MAX_REQUESTS_PER_MINUTE: int = 60
+    AUTH_REQUESTS_PER_MINUTE: int = 60
+    DEFAULT_REQUESTS_PER_MINUTE: int = 120
 
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -169,8 +170,12 @@ class Settings(BaseSettings):
         return self.ACCOUNT_LOCKOUT_MINUTES
     
     @property
-    def max_requests_per_minute(self) -> int:
-        return self.MAX_REQUESTS_PER_MINUTE
+    def auth_requests_per_minute(self) -> int:
+        return self.AUTH_REQUESTS_PER_MINUTE
+
+    @property
+    def default_requests_per_minute(self) -> int:
+        return self.DEFAULT_REQUESTS_PER_MINUTE
     
     @property
     def log_level(self) -> str:

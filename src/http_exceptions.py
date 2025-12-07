@@ -51,3 +51,8 @@ class Conflict(DetailedHTTPException):
 class TooManyRequests(DetailedHTTPException):
     STATUS_CODE = status.HTTP_429_TOO_MANY_REQUESTS
     DETAIL = "Too manyrRequests"
+
+
+class EntityTooLarge(DetailedHTTPException):
+    STATUS_CODE = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    DETAIL = "Request entity too large. Max size is 1MB."

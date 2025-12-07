@@ -61,7 +61,7 @@ google_sso = GoogleSSO(
 
 
 @router.post("/auth/signin", response_model=Token)
-@limiter.limit(f"{config.max_requests_per_minute}/minute")
+@limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def signin_with_email_and_password(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -313,7 +313,7 @@ async def logout(request: Request, response: Response):
 
 # Email Verification Endpoints
 @router.post("/auth/send-verification", response_model=EmailVerificationResponse)
-@limiter.limit(f"{config.max_requests_per_minute}/minute")
+@limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def send_email_verification(
     request: Request, request_data: EmailVerificationRequest
 ):
@@ -365,7 +365,7 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
 
 # Password Reset Endpoints
 @router.post("/auth/forgot-password", response_model=PasswordResetResponse)
-@limiter.limit(f"{config.max_requests_per_minute}/minute")
+@limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def forgot_password(request: Request, request_data: PasswordResetRequest):
     """
     Send a password reset email to the user.

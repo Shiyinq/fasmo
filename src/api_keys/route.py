@@ -16,7 +16,7 @@ logger = create_logger("api_keys", __name__)
 
 
 @router.post("/key", status_code=201, response_model=APIKeysResponse)
-@limiter.limit(f"{config.max_requests_per_minute}/minute")
+@limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def create_api_key(request: Request, current_user=Depends(get_current_user), _=Depends(require_csrf_protection)):
     """
     Create a new API key for the current user.
