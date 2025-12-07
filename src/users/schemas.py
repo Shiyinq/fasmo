@@ -10,7 +10,7 @@ from src.users.http_exceptions import PasswordNotMatch, PasswordRules
 
 
 class UserBase(BaseModel):
-    userId: UUID = Field(default_factory=lambda: str(uuid4()))
+    userId: str = Field(default_factory=lambda: str(uuid4()))
     profilePicture: str = Field(max_length=255, default=None)
     name: str = Field(max_length=20)
     username: str = Field(max_length=50)
