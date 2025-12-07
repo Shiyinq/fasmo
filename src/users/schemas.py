@@ -59,7 +59,6 @@ class PasswordBase(UserBase):
 class UserCreate(PasswordBase):
     def to_dict(self):
         data = self.dict()
-        data["password"] = get_password_hash(data["password"])
         data.pop("confirmPassword")
         return data
 
