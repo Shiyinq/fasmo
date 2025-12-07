@@ -1,5 +1,6 @@
 from typing import Dict, Union
 
+from fastapi import BackgroundTasks
 from pymongo.errors import DuplicateKeyError
 
 from src.auth.service import send_email_verification
@@ -39,12 +40,12 @@ async def base_create_user(user) -> UserCreated:
         raise UserCreationError()
 
 
-async def create_user(user: UserCreate) -> Union[UserCreatedWithEmail, UserCreated]:
+async def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> Union[UserCreatedWithEmail, UserCreated]:
     await base_create_user(user)
 
     # Send email verification for regular signup
     try:
-        await send_email_verification(user.userId, user.email, user.username)
+        await send_email_verification(user.userId, user.email, user.username, background_tasks)
         # Return success message with email verification info
         return UserCreatedWithEmail()
     except Exception as e:
