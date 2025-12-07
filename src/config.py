@@ -46,6 +46,8 @@ class Settings(BaseSettings):
 
     # Internal
     API_KEY_PREFIX: str = "ffk_"
+    DB_MAX_POOL_SIZE: int = 50
+    MAX_UPLOAD_SIZE_BYTES: int = 1_048_576  # 1 MB
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=True
@@ -188,6 +190,14 @@ class Settings(BaseSettings):
     @property
     def api_key_prefix(self) -> str:
         return self.API_KEY_PREFIX
+
+    @property
+    def db_max_pool_size(self) -> int:
+        return self.DB_MAX_POOL_SIZE
+
+    @property
+    def max_upload_size_bytes(self) -> int:
+        return self.MAX_UPLOAD_SIZE_BYTES
 
 
 config = Settings()

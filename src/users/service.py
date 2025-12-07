@@ -3,7 +3,7 @@ from typing import Dict, Union
 from fastapi import BackgroundTasks
 from pymongo.errors import DuplicateKeyError
 
-from src.auth.service import send_email_verification
+from src.auth.service import send_email_verification, get_password_hash
 from src.logging_config import create_logger
 from src.users import repository
 from src.users.constants import Info
@@ -26,6 +26,9 @@ async def base_create_user(user) -> UserCreated:
             user_data["username"] = user_data["username"].lower()
         if "email" in user_data:
             user_data["email"] = user_data["email"].lower()
+            
+        if "password" in user_data:
+            user_data["password"] = await get_password_hash(user_data["password"])
             
         await repository.insert_user(user_data)
         return UserCreated()

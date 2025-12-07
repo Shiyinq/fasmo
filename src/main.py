@@ -59,7 +59,7 @@ app.add_middleware(SlowAPIMiddleware)
 @app.middleware("http")
 async def limit_upload_size(request: Request, call_next):
     # Max body size: 1 MB (adjust if you need to handle file uploads)
-    max_upload_size = 1_048_576 
+    max_upload_size = config.max_upload_size_bytes 
     content_length = request.headers.get("content-length")
     if content_length:
         if int(content_length) > max_upload_size:

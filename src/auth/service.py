@@ -1,4 +1,4 @@
-import hashlib
+import asyncio
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
@@ -27,12 +27,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
 logger = create_logger("auth_service", __name__)
 
 
-def verify_password(plain_password, hashed_password) -> str:
-    return pwd_context.verify(plain_password, hashed_password)
+async def verify_password(plain_password, hashed_password) -> str:
+    return await asyncio.to_thread(pwd_context.verify, plain_password, hashed_password)
 
 
-def get_password_hash(password) -> str:
-    return pwd_context.hash(password)
+async def get_password_hash(password) -> str:
+    return await asyncio.to_thread(pwd_context.hash, password)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -71,12 +71,12 @@ async def authenticate_user(
     # Mitigate timing attacks by always performing verification
     is_valid_password = False
     if user:
-        is_valid_password = verify_password(password, user.password)
+        is_valid_password = await verify_password(password, user.password)
     else:
         # Fake verification to consume time similar to real verification
         # Use a dummy hash constant to prevent optimizing it away, but ensure it's not a real hash
         fake_hash = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
-        verify_password(password or "dummy", fake_hash)
+        await verify_password(password or "dummy", fake_hash)
 
     if not user and provider is None:
         raise IncorrectCredentialsError()
@@ -251,7 +251,7 @@ async def reset_password(token: str, new_password: str) -> bool:
         return False
 
     # Update password using userId
-    hashed_password = get_password_hash(new_password)
+    hashed_password = await get_password_hash(new_password)
     await database_instance.database["users"].update_one(
         {"userId": token_data["userId"]}, {"$set": {"password": hashed_password}}
     )

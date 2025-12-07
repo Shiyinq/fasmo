@@ -1,4 +1,4 @@
-import asyncio
+from src.config import config
 from src.database import database_instance
 from src.logging_config import create_logger
 
@@ -18,11 +18,16 @@ async def create_indexes():
         await db["refresh_tokens"].create_index("hashRefreshToken", unique=True)
         await db["refresh_tokens"].create_index("userId")
         # Automatic expiry for tokens
-        await db["refresh_tokens"].create_index("createdAt", expireAfterSeconds=30 * 24 * 60 * 60) # 30 days
+        expire_seconds = config.refresh_token_max_age_days * 24 * 60 * 60
+        await db["refresh_tokens"].create_index("createdAt", expireAfterSeconds=expire_seconds)
         
         # API Keys indexes
         await db["api_keys"].create_index("userId")
-        # Compound index for user and prefix if needed
+        
+        # Verification tokens indexes
+        await db["verification_tokens"].create_index("userId")
+        await db["verification_tokens"].create_index("hashToken", unique=True)
+        await db["verification_tokens"].create_index("expiresAt", expireAfterSeconds=0)
         
         logger.info("Database indexes created successfully")
     except Exception as e:

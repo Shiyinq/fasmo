@@ -17,7 +17,7 @@ class Database:
         
         try:
             self.client = motor.motor_asyncio.AsyncIOMotorClient(
-                config.mongo_uri, maxPoolSize=50
+                config.mongo_uri, maxPoolSize=config.db_max_pool_size
             )
             self.database = self.client[config.db_name]
             self.logger.info(f"Connected to database: {config.db_name}")

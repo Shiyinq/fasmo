@@ -160,42 +160,6 @@ class SecurityService:
                 email, username, config.account_lockout_minutes
             )
 
-    @staticmethod
-    async def delete_expired_verification_tokens():
-        """Delete expired verification tokens"""
-        current_time = datetime.now(timezone.utc)
-        await database_instance.database["verification_tokens"].delete_many(
-            {"expiresAt": {"$lt": current_time}}
-        )
 
-    @staticmethod
-    async def cleanup_expired_tokens():
-        """Clean up all expired tokens"""
-        await SecurityService.delete_expired_verification_tokens()
-        await SecurityService.delete_expired_refresh_tokens()
 
-    @staticmethod
-    async def delete_expired_refresh_tokens():
-        """Delete expired refresh tokens"""
-        from src.auth.constants import REFRESH_TOKEN_MAX_AGE
-        from src.auth.service import delete_refresh_token
 
-        # Find expired refresh tokens
-        expired_tokens = (
-            await database_instance.database["refresh_tokens"]
-            .find(
-                {
-                    "createdAt": {
-                        "$lt": (
-                            datetime.now(timezone.utc)
-                            - timedelta(days=REFRESH_TOKEN_MAX_AGE)
-                        ).isoformat()
-                    }
-                }
-            )
-            .to_list(length=None)
-        )
-
-        # Delete each expired token
-        for token_data in expired_tokens:
-            await delete_refresh_token(token_data["hashRefreshToken"])
