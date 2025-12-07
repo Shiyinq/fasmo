@@ -13,10 +13,18 @@ from src.database import database_instance
 from src.logging_config import request_id_ctx_var
 
 
+from src.exceptions import DomainException
+from src.exception_handlers import detailed_http_exception_handler, domain_exception_handler
+from src.http_exceptions import DetailedHTTPException
+from src.utils_db import create_indexes
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Connect to the database
     await database_instance.connect()
+    # Create indexes on startup
+    await create_indexes()
     yield
     # Shutdown: Close the database connection
     await database_instance.close()
@@ -30,6 +38,10 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan
 )
+
+# Exception Handlers
+app.add_exception_handler(DomainException, domain_exception_handler)
+app.add_exception_handler(DetailedHTTPException, detailed_http_exception_handler)
 
 # Add rate limiter to app
 app.state.limiter = limiter
