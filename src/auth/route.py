@@ -21,17 +21,7 @@ from src.auth.exceptions import (
     PasswordsDoNotMatchError,
     PasswordPolicyViolationError,
 )
-from src.auth.http_exceptions import (
-    EmailNotFoundOrVerified,
-    IncorrectEmailOrPassword,
-    InvalidRefreshToken,
-    PasswordPolicyViolation,
-    PasswordResetTokenInvalid,
-    PasswordsNotMatch,
-    RefreshTokenExpired,
-    SuspiciousActivity,
-    VerificationTokenInvalid,
-)
+from src.auth.http_exceptions import EmailNotFoundOrVerified
 from src.auth.schemas import (
     EmailVerificationRequest,
     EmailVerificationResponse,
@@ -91,29 +81,23 @@ async def signin_with_email_and_password(
     logger.info(
         f"Incoming request: {request.method} {request.url} username={form_data.username}"
     )
-    try:
-        user = await service.authenticate_user(form_data.username, form_data.password)
-        access_token = service.create_access_token(data={"sub": user.userId})
-        await service.set_refresh_cookie_and_history(
-            response, user.userId, request, config
-        )
-        response.set_cookie(
-            key="token",
-            value=access_token,
-            httponly=True,
-            max_age=config.access_token_expire_minutes * 60,
-            path="/",
-            samesite="lax",
-            secure=not config.is_env_dev,
-        )
-        logger.info(f"Login success user_id={user.userId}")
-        return {"access_token": access_token, "token_type": "bearer"}
-    except IncorrectCredentialsError:
-        logger.warning(f"Incorrect credentials: {form_data.username}")
-        raise IncorrectEmailOrPassword()
-    except Exception as e:
-        logger.exception(f"Unexpected error: {str(e)}")
-        raise InternalServerError()
+    
+    user = await service.authenticate_user(form_data.username, form_data.password)
+    access_token = service.create_access_token(data={"sub": user.userId})
+    await service.set_refresh_cookie_and_history(
+        response, user.userId, request, config
+    )
+    response.set_cookie(
+        key="token",
+        value=access_token,
+        httponly=True,
+        max_age=config.access_token_expire_minutes * 60,
+        path="/",
+        samesite="lax",
+        secure=not config.is_env_dev,
+    )
+    logger.info(f"Login success user_id={user.userId}")
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/auth/refresh", response_model=Token)
@@ -129,68 +113,65 @@ async def refresh_access_token(request: Request, response: Response):
         Token: New access token and token type.
     """
     logger.info(f"Incoming request: {request.method} {request.url}")
-    try:
-        refresh_token = request.cookies.get("refresh_token")
-        if not refresh_token:
-            logger.warning("No refresh_token in cookie")
-            raise InvalidRefreshToken()
+    
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        logger.warning("No refresh_token in cookie")
+        raise InvalidRefreshTokenError() # Use domain exception
 
-        hash_refresh_token = service.hash_token(refresh_token)
-        token_data = await service.get_refresh_token(hash_refresh_token)
-        if not token_data:
-            logger.warning("Token data not found")
-            raise InvalidRefreshToken()
+    hash_refresh_token = service.hash_token(refresh_token)
+    token_data = await service.get_refresh_token(hash_refresh_token)
+    if not token_data:
+        logger.warning("Token data not found")
+        raise InvalidRefreshTokenError() # Use domain exception
 
-        device, ip, browser, user_agent = service.extract_request_info(request)
-        if (
-            token_data["device"] != device
-            or token_data["ip"] != ip
-            or token_data["browser"] != browser
-        ):
-            logger.warning(
-                f"Device/IP/Browser mismatch user_id={token_data.get('userId')}"
-            )
-            await service.delete_refresh_token(hash_refresh_token)
-            raise SuspiciousActivity()
-
-        created_at = datetime.fromisoformat(token_data["createdAt"])
-        if (
-            datetime.now(timezone.utc) - created_at
-        ).days >= config.refresh_token_max_age_days:
-            logger.info(
-                f"Refresh token expired user_id={token_data.get('userId')}"
-            )
-            await service.delete_refresh_token(hash_refresh_token)
-            raise RefreshTokenExpired()
-
-        await service.update_refresh_token_last_used(hash_refresh_token)
-        await service.save_login_history(
-            token_data["userId"],
-            device,
-            ip,
-            browser,
-            user_agent_raw=user_agent,
+    device, ip, browser, user_agent = service.extract_request_info(request)
+    if (
+        token_data["device"] != device
+        or token_data["ip"] != ip
+        or token_data["browser"] != browser
+    ):
+        logger.warning(
+            f"Device/IP/Browser mismatch user_id={token_data.get('userId')}"
         )
-        access_token = service.create_access_token(data={"sub": token_data["userId"]})
+        await service.delete_refresh_token(hash_refresh_token)
+        raise SuspiciousActivityError()
+
+    created_at = datetime.fromisoformat(token_data["createdAt"])
+    if (
+        datetime.now(timezone.utc) - created_at
+    ).days >= config.refresh_token_max_age_days:
         logger.info(
-            f"Refresh token success user_id={token_data.get('userId')}"
+            f"Refresh token expired user_id={token_data.get('userId')}"
         )
-        response.set_cookie(
-            key="token",
-            value=access_token,
-            httponly=True,
-            max_age=config.access_token_expire_minutes * 60,
-            path="/",
-            samesite="lax",
-            secure=not config.is_env_dev,
-        )
-        
-        CSRFService.set_csrf_cookie(response, config.is_env_dev)
-        
-        return {"access_token": access_token, "token_type": "bearer"}
-    except Exception as e:
-        logger.exception(f"Error: {str(e)}")
-        raise
+        await service.delete_refresh_token(hash_refresh_token)
+        raise RefreshTokenExpiredError()
+
+    await service.update_refresh_token_last_used(hash_refresh_token)
+    await service.save_login_history(
+        token_data["userId"],
+        device,
+        ip,
+        browser,
+        user_agent_raw=user_agent,
+    )
+    access_token = service.create_access_token(data={"sub": token_data["userId"]})
+    logger.info(
+        f"Refresh token success user_id={token_data.get('userId')}"
+    )
+    response.set_cookie(
+        key="token",
+        value=access_token,
+        httponly=True,
+        max_age=config.access_token_expire_minutes * 60,
+        path="/",
+        samesite="lax",
+        secure=not config.is_env_dev,
+    )
+    
+    CSRFService.set_csrf_cookie(response, config.is_env_dev)
+    
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.get("/auth/google/signin")
@@ -201,13 +182,10 @@ async def signin_with_google():
     Returns:
         RedirectResponse: Redirect to Google OAuth2 login.
     """
-    try:
-        with google_sso:
-            return await google_sso.get_login_redirect(
-                params={"prompt": "consent", "access_type": "offline"}
-            )
-    except Exception as e:
-        return {"detail": e}
+    with google_sso:
+        return await google_sso.get_login_redirect(
+            params={"prompt": "consent", "access_type": "offline"}
+        )
 
 
 @router.get("/auth/google/callback")
@@ -217,40 +195,37 @@ async def google_auth_callback(request: Request, response: Response):
 
     Parameters:
         request (Request): FastAPI request object.
-        response (Response): FastAPI response object (used to set cookies).
+        request (Response): FastAPI response object (used to set cookies).
 
     Returns:
         RedirectResponse: Redirect to frontend with access token as query param.
     """
-    try:
-        with google_sso:
-            user = await google_sso.verify_and_process(request)
-            check_user = await service.authenticate_user(
-                username_or_email=user.email, provider=user.provider
-            )
-            if not check_user:
-                user_provider = service.extract_user_provider(user)
-                user_provider = ProviderUserCreate(**user_provider)
-                await create_user_provider(user_provider)
-            access_token = service.create_access_token(data={"sub": user.email})
-            await service.set_refresh_cookie_and_history(
-                response, user.email, request, config
-            )
-            response.set_cookie(
-                key="token",
-                value=access_token,
-                httponly=True,
-                max_age=config.access_token_expire_minutes * 60,
-                path="/",
-                samesite="lax",
-                secure=not config.is_env_dev,
-            )
-            redirect_url = (
-                f"{config.frontend_url}/auth/callback?access_token={access_token}"
-            )
-            return RedirectResponse(url=redirect_url)
-    except Exception as e:
-        return {"detail": e}
+    with google_sso:
+        user = await google_sso.verify_and_process(request)
+        check_user = await service.authenticate_user(
+            username_or_email=user.email, provider=user.provider
+        )
+        if not check_user:
+            user_provider = service.extract_user_provider(user)
+            user_provider = ProviderUserCreate(**user_provider)
+            await create_user_provider(user_provider)
+        access_token = service.create_access_token(data={"sub": user.email})
+        await service.set_refresh_cookie_and_history(
+            response, user.email, request, config
+        )
+        response.set_cookie(
+            key="token",
+            value=access_token,
+            httponly=True,
+            max_age=config.access_token_expire_minutes * 60,
+            path="/",
+            samesite="lax",
+            secure=not config.is_env_dev,
+        )
+        redirect_url = (
+            f"{config.frontend_url}/auth/callback?access_token={access_token}"
+        )
+        return RedirectResponse(url=redirect_url)
 
 
 @router.get("/auth/github/signin")
@@ -261,11 +236,8 @@ async def signin_with_github():
     Returns:
         RedirectResponse: Redirect to GitHub OAuth2 login.
     """
-    try:
-        with github_sso:
-            return await github_sso.get_login_redirect()
-    except Exception as e:
-        return {"detail": e}
+    with github_sso:
+        return await github_sso.get_login_redirect()
 
 
 @router.get("/auth/github/callback")
@@ -275,40 +247,37 @@ async def github_auth_callback(request: Request, response: Response):
 
     Parameters:
         request (Request): FastAPI request object.
-        response (Response): FastAPI response object (used to set cookies).
+        request (Response): FastAPI response object (used to set cookies).
 
     Returns:
         RedirectResponse: Redirect to frontend with access token as query param.
     """
-    try:
-        with github_sso:
-            user = await github_sso.verify_and_process(request)
-            check_user = await service.authenticate_user(
-                username_or_email=user.email, provider=user.provider
-            )
-            if not check_user:
-                user_provider = service.extract_user_provider(user)
-                user_provider = ProviderUserCreate(**user_provider)
-                await create_user_provider(user_provider)
-            access_token = service.create_access_token(data={"sub": user.email})
-            await service.set_refresh_cookie_and_history(
-                response, user.email, request, config
-            )
-            response.set_cookie(
-                key="token",
-                value=access_token,
-                httponly=True,
-                max_age=config.access_token_expire_minutes * 60,
-                path="/",
-                samesite="lax",
-                secure=not config.is_env_dev,
-            )
-            redirect_url = (
-                f"{config.frontend_url}/auth/callback?access_token={access_token}"
-            )
-            return RedirectResponse(url=redirect_url)
-    except Exception as e:
-        return {"detail": e}
+    with github_sso:
+        user = await github_sso.verify_and_process(request)
+        check_user = await service.authenticate_user(
+            username_or_email=user.email, provider=user.provider
+        )
+        if not check_user:
+            user_provider = service.extract_user_provider(user)
+            user_provider = ProviderUserCreate(**user_provider)
+            await create_user_provider(user_provider)
+        access_token = service.create_access_token(data={"sub": user.email})
+        await service.set_refresh_cookie_and_history(
+            response, user.email, request, config
+        )
+        response.set_cookie(
+            key="token",
+            value=access_token,
+            httponly=True,
+            max_age=config.access_token_expire_minutes * 60,
+            path="/",
+            samesite="lax",
+            secure=not config.is_env_dev,
+        )
+        redirect_url = (
+            f"{config.frontend_url}/auth/callback?access_token={access_token}"
+        )
+        return RedirectResponse(url=redirect_url)
 
 
 @router.post("/auth/logout", response_model=LogoutResponse)
@@ -320,29 +289,26 @@ async def logout(request: Request, response: Response):
         LogoutResponse: Message indicating logout success.
     """
     logger.info(f"Incoming request: {request.method} {request.url}")
-    try:
-        refresh_token = request.cookies.get("refresh_token")
-        if refresh_token:
-            await service.delete_refresh_token(refresh_token)
-            response.delete_cookie(
-                key="refresh_token",
-                path="/",
-                samesite="lax",
-                secure=not config.is_env_dev,
-                httponly=True,
-            )
+    
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        await service.delete_refresh_token(refresh_token)
         response.delete_cookie(
-            key="token",
+            key="refresh_token",
             path="/",
             samesite="lax",
             secure=not config.is_env_dev,
             httponly=True,
         )
-        logger.info(f"Logout success")
-        return LogoutResponse(message=Info.LOGOUT_SUCCESS)
-    except Exception as e:
-        logger.exception(f"Error: {str(e)}")
-        raise
+    response.delete_cookie(
+        key="token",
+        path="/",
+        samesite="lax",
+        secure=not config.is_env_dev,
+        httponly=True,
+    )
+    logger.info(f"Logout success")
+    return LogoutResponse(message=Info.LOGOUT_SUCCESS)
 
 
 # Email Verification Endpoints
@@ -365,6 +331,16 @@ async def send_email_verification(
     if success:
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
+        # We can raise a DomainException here if we want to be explicit, but the original code raised HTTP Exception
+        # The logic was: if not success, raise EmailNotFoundOrVerified
+        # Since EmailNotFoundOrVerified is an HTTP Exception, we should ideally use a Domain Exception if we want to be consistent.
+        # However, checking src/auth/http_exceptions.py, EmailNotFoundOrVerified is likely a DetailedHTTPException.
+        # We can keep raising it directly or create a Domain Exception.
+        # For strictness, let's keep raising the HTTP Exception if there is no Domain equivalent yet,
+        # OR create a Domain equivalent.
+        # Let's see if we can just raise the HTTP exception for now as it inherits from DetailedHTTPException which is handled.
+        # But wait, DetailedHTTPException is handled by `detailed_http_exception_handler`.
+        # So raising it is fine!
         raise EmailNotFoundOrVerified()
 
 
@@ -379,18 +355,12 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
     Returns:
         VerifyEmailResponse: Message indicating verification result.
     """
-    try:
-        success = await service.verify_email(request_data.token)
-        if success:
-            return VerifyEmailResponse(message=ErrorCode.EMAIL_VERIFIED_SUCCESS)
-        else:
-            raise VerificationTokenInvalidError()
-    except VerificationTokenInvalidError:
-        logger.warning(f"Invalid verification token")
-        raise VerificationTokenInvalid()
-    except Exception as e:
-        logger.exception(f"Unexpected error: {str(e)}")
-        raise InternalServerError()
+    
+    success = await service.verify_email(request_data.token)
+    if success:
+        return VerifyEmailResponse(message=ErrorCode.EMAIL_VERIFIED_SUCCESS)
+    else:
+        raise VerificationTokenInvalidError()
 
 
 # Password Reset Endpoints
@@ -422,36 +392,24 @@ async def reset_password_endpoint(request_data: PasswordResetConfirmRequest):
     Returns:
         PasswordResetConfirmResponse: Message indicating password reset result.
     """
-    try:
-        if request_data.new_password != request_data.confirm_password:
-            raise PasswordsDoNotMatchError()
+    
+    if request_data.new_password != request_data.confirm_password:
+        raise PasswordsDoNotMatchError()
 
-        # Validate password strength
-        from password_validator import PasswordValidator
+    # Validate password strength
+    from password_validator import PasswordValidator
 
-        password_rules = PasswordValidator()
-        password_rules.min(8).max(
-            128
-        ).has().uppercase().has().lowercase().has().digits().has().symbols().no().spaces()
-        if not password_rules.validate(request_data.new_password):
-            raise PasswordPolicyViolationError()
+    password_rules = PasswordValidator()
+    password_rules.min(8).max(
+        128
+    ).has().uppercase().has().lowercase().has().digits().has().symbols().no().spaces()
+    if not password_rules.validate(request_data.new_password):
+        raise PasswordPolicyViolationError()
 
-        success = await service.reset_password(
-            request_data.token, request_data.new_password
-        )
-        if success:
-            return PasswordResetConfirmResponse(message=ErrorCode.PASSWORD_RESET_SUCCESS)
-        else:
-            raise PasswordResetTokenInvalidError()
-    except PasswordsDoNotMatchError:
-        logger.warning(f"Passwords do not match")
-        raise PasswordsNotMatch()
-    except PasswordPolicyViolationError:
-        logger.warning(f"Password policy violation")
-        raise PasswordPolicyViolation()
-    except PasswordResetTokenInvalidError:
-        logger.warning(f"Invalid password reset token")
-        raise PasswordResetTokenInvalid()
-    except Exception as e:
-        logger.exception(f"Unexpected error: {str(e)}")
-        raise InternalServerError()
+    success = await service.reset_password(
+        request_data.token, request_data.new_password
+    )
+    if success:
+        return PasswordResetConfirmResponse(message=ErrorCode.PASSWORD_RESET_SUCCESS)
+    else:
+        raise PasswordResetTokenInvalidError()
