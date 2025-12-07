@@ -34,8 +34,11 @@ async def lifespan(app: FastAPI):
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
-    title="Fasmo API", 
-    openapi_url="/api/openapi.json",
+    title="Fasmo API",
+    openapi_url="/api/openapi.json" if config.is_env_dev else None,  # Disable docs schema in prod
+    docs_url="/docs" if config.is_env_dev else None,                # Disable Swagger UI in prod
+    redoc_url="/redoc" if config.is_env_dev else None,              # Disable ReDoc in prod
+    debug=config.is_env_dev,                                        # Enable debug only in dev
     lifespan=lifespan
 )
 
