@@ -15,6 +15,12 @@ class RequestIdLogFormatter(logging.Formatter):
 
 
 def create_logger(app_name, name):
+    logger = logging.getLogger(name)
+    
+    # Check if logger already has handlers to prevent duplication
+    if logger.handlers:
+        return logger
+
     LOGGING_LEVEL = getattr(logging, config.log_level.upper(), logging.INFO)
     # Format: timestamp - logger - LEVEL [request_id] - message
     LOGGING_FORMAT = (
@@ -33,8 +39,8 @@ def create_logger(app_name, name):
     handler.setLevel(LOGGING_LEVEL)
     handler.setFormatter(RequestIdLogFormatter(LOGGING_FORMAT))
 
-    logger = logging.getLogger(name)
     logger.setLevel(LOGGING_LEVEL)
     logger.addHandler(handler)
+    logger.propagate = False  # Prevent propagation to root logger to avoid duplicates if root has handler
 
     return logger
