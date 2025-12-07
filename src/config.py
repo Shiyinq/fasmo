@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Logging
     LOG_LEVEL: str = "INFO"
+    LOG_DESTINATION: str = "console"
     LOG_PATH: str = "/var/log/fasmo/"
 
     # Internal
@@ -183,6 +184,10 @@ class Settings(BaseSettings):
     def log_level(self) -> str:
         return self.LOG_LEVEL
     
+    @property
+    def log_destination(self) -> str:
+        return self.LOG_DESTINATION
+
     @property
     def log_path(self) -> str:
         return self.LOG_PATH
