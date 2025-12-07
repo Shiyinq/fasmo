@@ -78,9 +78,7 @@ async def signin_with_email_and_password(
     Returns:
         Token: Access token and token type.
     """
-    logger.info(
-        f"Incoming request: {request.method} {request.url} username={form_data.username}"
-    )
+
     
     user = await service.authenticate_user(form_data.username, form_data.password)
     access_token = service.create_access_token(data={"sub": user.userId})
@@ -112,7 +110,7 @@ async def refresh_access_token(request: Request, response: Response):
     Returns:
         Token: New access token and token type.
     """
-    logger.info(f"Incoming request: {request.method} {request.url}")
+
     
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
@@ -288,7 +286,7 @@ async def logout(request: Request, response: Response):
     Returns:
         LogoutResponse: Message indicating logout success.
     """
-    logger.info(f"Incoming request: {request.method} {request.url}")
+
     
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:

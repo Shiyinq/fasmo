@@ -24,7 +24,7 @@ async def create_api_key(request: Request, current_user=Depends(get_current_user
     Returns:
         APIKeysResponse: Newly generated API key and detail message.
     """
-    logger.info(f"Incoming request: user_id={current_user.userId}")
+
     
     new_api_key = await service.create_api_key(current_user.userId)
     return new_api_key
@@ -41,7 +41,7 @@ async def delete_api_key(current_user=Depends(get_current_user), _=Depends(requi
     Raises:
         APIKeyNotFound: If the current user does not have an API key.
     """
-    logger.info(f"Incoming request: user_id={current_user.userId}")
+
     
     deleted = await service.delete_api_key(current_user.userId)
     

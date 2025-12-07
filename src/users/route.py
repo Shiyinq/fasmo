@@ -16,9 +16,7 @@ async def signup(user: UserCreate, background_tasks: BackgroundTasks):
     """
     Register a new user account.
     """
-    logger.info(
-        f"Incoming request to create user: username={user.username if hasattr(user, 'username') else ''}"
-    )
+
     
     new_user = await service.create_user(user, background_tasks)
     
@@ -36,8 +34,6 @@ async def user_profile(current_user=Depends(dependencies.get_current_user)):
     Returns:
         UserCurrent: The current user's profile data.
     """
-    logger.info(
-        f"Incoming request to get user profile: user_id={current_user.userId}"
-    )
+
     
     return current_user
