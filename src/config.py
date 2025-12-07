@@ -1,27 +1,27 @@
 from typing import List
 
-from pydantic import computed_field
+from pydantic import computed_field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # App
     ENV: str = "dev"
-    SECRET_KEY: str
+    SECRET_KEY: SecretStr
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_MAX_AGE_DAYS: int = 30
 
     # DB
-    MONGODB_URI: str
+    MONGODB_URI: SecretStr
     DB_NAME: str = "fasmo"
 
     # External Auth
     GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_CLIENT_SECRET: SecretStr
     GOOGLE_REDIRECT_URI: str
     GITHUB_CLIENT_ID: str
-    GITHUB_CLIENT_SECRET: str
+    GITHUB_CLIENT_SECRET: SecretStr
     GITHUB_REDIRECT_URI: str
 
     # Frontend
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ORIGINS: str
 
     # Email
-    RESEND_API_KEY: str
+    RESEND_API_KEY: SecretStr
     EMAIL_FROM: str = "onboarding@resend.dev"
     EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
     PASSWORD_RESET_EXPIRE_HOURS: int = 1
@@ -59,7 +59,8 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         if not self.ORIGINS:
             if self.is_env_dev:
-                return ["http://localhost:5050", "http://localhost:5173"]
+                # Strictly allow only common frontend dev ports, remove generic wildcard potential
+                return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
             else:
                 raise ValueError(
                     "ORIGINS environment variable is required in production"
@@ -80,19 +81,32 @@ class Settings(BaseSettings):
 
     @property
     def mongo_uri(self) -> str:
-        return self.MONGODB_URI
+        return self.MONGODB_URI.get_secret_value()
 
     @property
     def db_name(self) -> str:
         return self.DB_NAME
 
+    @computed_field
     @property
     def secret_key(self) -> str:
-        return self.SECRET_KEY
+        # Security: Ensure secret key is strong enough (min 32 chars)
+        secret_value = self.SECRET_KEY.get_secret_value()
+        if len(secret_value) < 32:
+             # In production this should be a hard error, but for dev we can just warn or error.
+             # Let's be strict to enforce good habits.
+             if not self.is_env_dev: # Allow short key in dev for convenience, but strict in prod
+                 raise ValueError("SECRET_KEY must be at least 32 characters long in production")
+        return secret_value
 
     @property
     def algorithm(self) -> str:
-        return self.ALGORITHM
+        # Security: Enforce allowed algorithms, forbid 'none'
+        allowed_algos = ["HS256", "RS256"]
+        algo = self.ALGORITHM or "HS256" # Default to HS256 if None
+        if algo.lower() == "none" or algo not in allowed_algos:
+            raise ValueError(f"Algorithm {algo} is not allowed. Choose from {allowed_algos}")
+        return algo
 
     @property
     def access_token_expire_minutes(self) -> int:
@@ -108,7 +122,7 @@ class Settings(BaseSettings):
 
     @property
     def google_client_secret(self) -> str:
-        return self.GOOGLE_CLIENT_SECRET
+        return self.GOOGLE_CLIENT_SECRET.get_secret_value()
 
     @property
     def google_redirect_uri(self) -> str:
@@ -120,7 +134,7 @@ class Settings(BaseSettings):
 
     @property
     def github_client_secret(self) -> str:
-        return self.GITHUB_CLIENT_SECRET
+        return self.GITHUB_CLIENT_SECRET.get_secret_value()
 
     @property
     def github_redirect_uri(self) -> str:
@@ -132,7 +146,7 @@ class Settings(BaseSettings):
 
     @property
     def resend_api_key(self) -> str:
-        return self.RESEND_API_KEY
+        return self.RESEND_API_KEY.get_secret_value()
     
     @property
     def email_from(self) -> str:
