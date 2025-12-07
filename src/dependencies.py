@@ -19,7 +19,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if token.startswith(config.api_key_prefix):
             try:
                 user = await validate_api_key(token)
-                logger.info(f"From API Key Success: user={user['userId']}")
                 return UserCurrent(**user)
             except Exception as e:
                 logger.warning(f"API Key validation failed: {str(e)}")
@@ -38,7 +37,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if user is None:
         logger.warning(f"User not found: {token_data.username}")
         raise InvalidJWTToken()
-    logger.info(f"Success: user={token_data.username}")
     return UserCurrent(**user.dict())
 
 
