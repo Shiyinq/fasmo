@@ -20,6 +20,12 @@ logger = create_logger("users_service", __name__)
 async def base_create_user(user) -> UserCreated:
     try:
         user_data = user.to_dict()
+        # Normalize to lowercase
+        if "username" in user_data:
+            user_data["username"] = user_data["username"].lower()
+        if "email" in user_data:
+            user_data["email"] = user_data["email"].lower()
+            
         await repository.insert_user(user_data)
         return UserCreated()
     except DuplicateKeyError as dk:
@@ -51,6 +57,12 @@ async def create_user_provider(user: ProviderUserCreate) -> UserCreated:
     # For provider users, mark email as verified since it's already verified by the provider
     try:
         user_data = user.to_dict()
+        # Normalize to lowercase
+        if "username" in user_data:
+            user_data["username"] = user_data["username"].lower()
+        if "email" in user_data:
+            user_data["email"] = user_data["email"].lower()
+            
         user_data["isEmailVerified"] = True
         user_data["provider"] = user.provider
         await repository.insert_user(user_data)

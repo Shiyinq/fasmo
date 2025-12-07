@@ -48,6 +48,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 
 async def get_user(username_or_email: str) -> UserLogin:
+    # Normalize input to lowercase for consistent querying
+    username_or_email = username_or_email.lower()
     query = {
         "$or": [
             {"username": username_or_email},
@@ -64,6 +66,17 @@ async def authenticate_user(
     username_or_email: str, password: str = None, provider: str = None
 ) -> Union[UserLogin, bool]:
     user = await get_user(username_or_email)
+    
+    # Mitigate timing attacks by always performing verification
+    is_valid_password = False
+    if user:
+        is_valid_password = verify_password(password, user.password)
+    else:
+        # Fake verification to consume time similar to real verification
+        # Use a dummy hash constant to prevent optimizing it away, but ensure it's not a real hash
+        fake_hash = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+        verify_password(password or "dummy", fake_hash)
+
     if not user and provider is None:
         raise IncorrectCredentialsError()
     elif not user and provider:
@@ -78,7 +91,7 @@ async def authenticate_user(
     if provider is None and not user.isEmailVerified:
         raise EmailNotVerified()
 
-    if password and not verify_password(password, user.password):
+    if password and not is_valid_password:
         # Handle failed login
         await SecurityService.handle_failed_login(
             user.userId, user.email, user.username
