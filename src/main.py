@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from src.api import router as api_router
@@ -15,7 +16,7 @@ from src.logging_config import request_id_ctx_var
 
 from src.exceptions import DomainException
 from src.exception_handlers import detailed_http_exception_handler, domain_exception_handler
-from src.http_exceptions import DetailedHTTPException
+from src.http_exceptions import DetailedHTTPException, EntityTooLarge
 from src.utils_db import create_indexes
 
 
@@ -30,8 +31,11 @@ async def lifespan(app: FastAPI):
     await database_instance.close()
 
 
-# Setup rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Setup rate limiter with global default limits
+limiter = Limiter(
+    key_func=get_remote_address, 
+    default_limits=[f"{config.default_requests_per_minute}/minute"]
+)
 
 app = FastAPI(
     title="Fasmo API",
@@ -49,6 +53,18 @@ app.add_exception_handler(DetailedHTTPException, detailed_http_exception_handler
 # Add rate limiter to app
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+
+@app.middleware("http")
+async def limit_upload_size(request: Request, call_next):
+    # Max body size: 1 MB (adjust if you need to handle file uploads)
+    max_upload_size = 1_048_576 
+    content_length = request.headers.get("content-length")
+    if content_length:
+        if int(content_length) > max_upload_size:
+            raise EntityTooLarge()
+    return await call_next(request)
 
 
 @app.middleware("http")
