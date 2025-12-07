@@ -17,9 +17,13 @@ logger = create_logger("dependencies", __name__)
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         if token.startswith(config.api_key_prefix):
-            user = await validate_api_key(token)
-            logger.info(f"From API Key Success: user={user['userId']}")
-            return UserCurrent(**user)
+            try:
+                user = await validate_api_key(token)
+                logger.info(f"From API Key Success: user={user['userId']}")
+                return UserCurrent(**user)
+            except Exception as e:
+                logger.warning(f"API Key validation failed: {str(e)}")
+                raise InvalidJWTToken() # Re-raise as 401 for consistency
 
         payload = jwt.decode(token, config.secret_key, algorithms=[config.algorithm])
         username: str = payload.get("sub")
