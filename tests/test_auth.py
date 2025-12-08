@@ -2,10 +2,15 @@ import pytest
 import uuid
 from httpx import AsyncClient
 from datetime import datetime, timezone, timedelta
+from passlib.context import CryptContext
 from src.config import config
-from src.auth.service import create_access_token, get_password_hash
 from src.auth.constants import Info, ErrorCode
 from src.utils import hash_token
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password) -> str:
+    return pwd_context.hash(password)
 
 
 @pytest.mark.asyncio

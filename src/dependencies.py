@@ -1,24 +1,68 @@
-from fastapi import Depends, Request
+from fastapi import Depends, Request, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-from src.api_keys.service import validate_api_key
 from src.auth.http_exceptions import InvalidJWTToken
 from src.auth.schemas import TokenData, UserCurrent
-from src.auth.service import get_user
+from src.auth.service import AuthService
+from src.auth.repository import AuthRepository
+from src.users.repository import UserRepository
+from src.users.service import UserService
 from src.auth.csrf_service import CSRFService
 from src.config import config
 from src.logging_config import create_logger
+from src.database import database_instance
+from src.api_keys.repository import ApiKeyRepository
+from src.api_keys.service import ApiKeyService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
 logger = create_logger("dependencies", __name__)
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_db():
+    return database_instance.database
+
+
+def get_api_key_repository(db=Depends(get_db)) -> ApiKeyRepository:
+    return ApiKeyRepository(db)
+
+
+def get_api_key_service(repo: ApiKeyRepository = Depends(get_api_key_repository)) -> ApiKeyService:
+    return ApiKeyService(repo)
+
+
+def get_user_repository(db=Depends(get_db)) -> UserRepository:
+    return UserRepository(db)
+
+
+def get_auth_repository(db=Depends(get_db)) -> AuthRepository:
+    return AuthRepository(db)
+
+
+def get_auth_service(
+    auth_repo: AuthRepository = Depends(get_auth_repository),
+    user_repo: UserRepository = Depends(get_user_repository)
+) -> AuthService:
+    return AuthService(auth_repo, user_repo)
+
+
+def get_user_service(
+    user_repo: UserRepository = Depends(get_user_repository),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> UserService:
+    return UserService(user_repo, auth_service)
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), 
+    api_key_service: ApiKeyService = Depends(get_api_key_service),
+    auth_service: AuthService = Depends(get_auth_service),
+    background_tasks: BackgroundTasks = None
+):
     try:
         if token.startswith(config.api_key_prefix):
             try:
-                user = await validate_api_key(token)
+                user = await api_key_service.validate_api_key(token, background_tasks)
                 return UserCurrent(**user)
             except Exception as e:
                 logger.warning(f"API Key validation failed: {str(e)}")
@@ -33,7 +77,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError as e:
         logger.exception(f"JWTError: {str(e)}")
         raise InvalidJWTToken()
-    user = await get_user(username_or_email=token_data.username)
+    user = await auth_service.get_user(username_or_email=token_data.username)
     if user is None:
         logger.warning(f"User not found: {token_data.username}")
         raise InvalidJWTToken()
@@ -44,7 +88,7 @@ def require_csrf_protection(request: Request):
     if request.method == "OPTIONS":
         return True
 
-    if request.headers.get("authorization").startswith(f"Bearer {config.api_key_prefix}"):
+    if request.headers.get("authorization") and request.headers.get("authorization").startswith(f"Bearer {config.api_key_prefix}"):
         return True
 
     if config.is_env_dev:

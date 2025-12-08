@@ -4,7 +4,6 @@ from uuid import UUID, uuid4
 from password_validator import PasswordValidator
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
-from src.auth.service import get_password_hash
 from src.users.constants import Info
 from src.users.http_exceptions import PasswordNotMatch, PasswordRules
 

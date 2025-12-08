@@ -1,4 +1,5 @@
 import secrets
+from fastapi import BackgroundTasks
 from src.config import config
 from src.logging_config import create_logger
 from src.api_keys.exceptions import (
@@ -10,93 +11,69 @@ from src.api_keys.exceptions import (
 from src.api_keys.schemas import APIKeysResponse, CreateAPIKey
 from src.api_keys.constants import Info
 from src.utils import hash_token
-from src.api_keys import repository
+from src.api_keys.repository import ApiKeyRepository
 
 logger = create_logger("api_keys_service", __name__)
 
 
-async def create_api_key(user_id: str) -> APIKeysResponse:
-    try:
-        api_key = f"{config.api_key_prefix}{secrets.token_urlsafe(32)}"
-        hash_key = hash_token(api_key)
-        data = CreateAPIKey(userId=user_id, hashKey=hash_key)
+class ApiKeyService:
+    def __init__(self, repository: ApiKeyRepository):
+        self.repository = repository
 
-        await check_and_delete_api_key(user_id)
-        await repository.insert_api_key(data.model_dump())
+    async def create_api_key(self, user_id: str) -> APIKeysResponse:
+        try:
+            api_key = f"{config.api_key_prefix}{secrets.token_urlsafe(32)}"
+            hash_key = hash_token(api_key)
+            data = CreateAPIKey(userId=user_id, hashKey=hash_key)
 
-        return APIKeysResponse(apiKey=api_key, detail=Info.API_KEY_CREATED + " " + Info.API_KEY_WARNING)
-    except Exception as e:
-        logger.exception(f"Error creating API key for user {user_id}: {str(e)}")
-        raise APIKeyCreationError()
+            await self.check_and_delete_api_key(user_id)
+            await self.repository.insert_api_key(data)
 
+            return APIKeysResponse(apiKey=api_key, detail=Info.API_KEY_CREATED + " " + Info.API_KEY_WARNING)
+        except Exception as e:
+            logger.exception(f"Error creating API key for user {user_id}: {str(e)}")
+            raise APIKeyCreationError()
 
-async def check_and_delete_api_key(user_id: str) -> bool:
-    curent_api_key = await repository.find_user_api_key(user_id)
-    if curent_api_key:
-        deleted = await repository.delete_user_api_key(user_id)
-        return  deleted.deleted_count == 1
-    
-    return False
-
-
-async def delete_api_key(user_id: str) -> APIKeysResponse:
-    try:
-        if await check_and_delete_api_key(user_id):
-            return APIKeysResponse(apiKey="", detail=Info.API_KEY_DELETED)
-
-        raise APIKeyNotFoundError()
-    except APIKeyNotFoundError:
-        raise
-    except Exception as e:
-        logger.exception(f"Error deleting API key for user {user_id}: {str(e)}")
-        raise APIKeyDeletionError()
-
-
-async def update_last_used_api_key(user_id: str) -> bool:
-    updated = await repository.update_last_used_api_key(user_id)
-    return updated.modified_count == 1
-
-
-async def validate_api_key(api_key: str) -> dict:
-    hash_key = hash_token(api_key)
-    query = [
-        {
-            '$match': {
-                'hashKey': hash_key
-            }
-        }, {
-            '$lookup': {
-                'from': 'users', 
-                'localField': 'userId', 
-                'foreignField': 'userId', 
-                'as': 'user'
-            }
-        }, {
-            '$unwind': {
-                'path': '$user', 
-                'preserveNullAndEmptyArrays': True
-            }
-        }, {
-            '$project': {
-                'userId': 1, 
-                'profilePicture': '$user.profilePicture', 
-                'name': '$user.name', 
-                'username': '$user.username', 
-                'email': '$user.email'
-            }
-        }
-    ]
-
-    try:
-        user = await repository.find_api_key(query)
-        if not len(user):
-            raise InvalidAPIKeyError()
+    async def check_and_delete_api_key(self, user_id: str) -> bool:
+        current_api_key = await self.repository.find_user_api_key(user_id)
+        if current_api_key:
+            deleted = await self.repository.delete_user_api_key(user_id)
+            return deleted.deleted_count == 1
         
-        await update_last_used_api_key(user[0]['userId'])
+        return False
 
-        return user[0]
-    except InvalidAPIKeyError:
-        raise
-    except Exception as e:
-        logger.exception(f"Error validating API key: {str(e)}")
-        raise InvalidAPIKeyError()
+    async def delete_api_key(self, user_id: str) -> APIKeysResponse:
+        try:
+            if await self.check_and_delete_api_key(user_id):
+                return APIKeysResponse(apiKey="", detail=Info.API_KEY_DELETED)
+
+            raise APIKeyNotFoundError()
+        except APIKeyNotFoundError:
+            raise
+        except Exception as e:
+            logger.exception(f"Error deleting API key for user {user_id}: {str(e)}")
+            raise APIKeyDeletionError()
+
+    async def update_last_used_api_key(self, user_id: str) -> bool:
+        updated = await self.repository.update_last_used_api_key(user_id)
+        return updated.modified_count == 1
+
+    async def validate_api_key(self, api_key: str, background_tasks: BackgroundTasks = None) -> dict:
+        hash_key = hash_token(api_key)
+
+        try:
+            user = await self.repository.find_user_by_hash_key(hash_key)
+            if not user:
+                raise InvalidAPIKeyError()
+            
+            if background_tasks:
+                background_tasks.add_task(self.update_last_used_api_key, user['userId'])
+            else:
+                await self.update_last_used_api_key(user['userId'])
+
+            return user
+        except InvalidAPIKeyError:
+            raise
+        except Exception as e:
+            logger.exception(f"Error validating API key: {str(e)}")
+            raise InvalidAPIKeyError()
