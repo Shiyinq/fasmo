@@ -8,7 +8,7 @@ from fastapi_sso.sso.google import GoogleSSO
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from src.auth import service
+from src.auth.service import AuthService
 from src.auth.constants import ErrorCode, Info
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
@@ -38,7 +38,8 @@ from src.config import config
 from src.http_exceptions import InternalServerError
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
-from src.users.service import create_user_provider
+from src.users.service import UserService
+from src.dependencies import get_auth_service, get_user_service
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -66,6 +67,7 @@ async def signin_with_email_and_password(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     response: Response = None,
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Sign in using email and password. Returns an access token and sets a refresh token cookie.
@@ -79,10 +81,9 @@ async def signin_with_email_and_password(
         Token: Access token and token type.
     """
 
-    
-    user = await service.authenticate_user(form_data.username, form_data.password)
-    access_token = service.create_access_token(data={"sub": user.userId})
-    await service.set_refresh_cookie_and_history(
+    user = await auth_service.authenticate_user(form_data.username, form_data.password)
+    access_token = auth_service.create_access_token(data={"sub": user.userId})
+    await auth_service.set_refresh_cookie_and_history(
         response, user.userId, request, config
     )
     response.set_cookie(
@@ -98,7 +99,11 @@ async def signin_with_email_and_password(
 
 
 @router.post("/auth/refresh", response_model=Token)
-async def refresh_access_token(request: Request, response: Response):
+async def refresh_access_token(
+    request: Request, 
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Refresh the access token using a valid refresh token from cookies.
 
@@ -110,19 +115,18 @@ async def refresh_access_token(request: Request, response: Response):
         Token: New access token and token type.
     """
 
-    
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         logger.warning("No refresh_token in cookie")
-        raise InvalidRefreshTokenError() # Use domain exception
+        raise InvalidRefreshTokenError() 
 
-    hash_refresh_token = service.hash_token(refresh_token)
-    token_data = await service.get_refresh_token(hash_refresh_token)
+    hash_refresh_token = auth_service.hash_token(refresh_token)
+    token_data = await auth_service.get_refresh_token(hash_refresh_token)
     if not token_data:
         logger.warning("Token data not found")
-        raise InvalidRefreshTokenError() # Use domain exception
+        raise InvalidRefreshTokenError() 
 
-    device, ip, browser, user_agent = service.extract_request_info(request)
+    device, ip, browser, user_agent = auth_service.extract_request_info(request)
     if (
         token_data["device"] != device
         or token_data["ip"] != ip
@@ -131,25 +135,25 @@ async def refresh_access_token(request: Request, response: Response):
         logger.warning(
             f"Device/IP/Browser mismatch user_id={token_data.get('userId')}"
         )
-        await service.delete_refresh_token(hash_refresh_token)
+        await auth_service.delete_refresh_token(hash_refresh_token)
         raise SuspiciousActivityError()
 
     created_at = datetime.fromisoformat(token_data["createdAt"])
     if (
         datetime.now(timezone.utc) - created_at
     ).days >= config.refresh_token_max_age_days:
-        await service.delete_refresh_token(hash_refresh_token)
+        await auth_service.delete_refresh_token(hash_refresh_token)
         raise RefreshTokenExpiredError()
 
-    await service.update_refresh_token_last_used(hash_refresh_token)
-    await service.save_login_history(
+    await auth_service.update_refresh_token_last_used(hash_refresh_token)
+    await auth_service.save_login_history(
         token_data["userId"],
         device,
         ip,
         browser,
         user_agent_raw=user_agent,
     )
-    access_token = service.create_access_token(data={"sub": token_data["userId"]})
+    access_token = auth_service.create_access_token(data={"sub": token_data["userId"]})
     response.set_cookie(
         key="token",
         value=access_token,
@@ -180,7 +184,12 @@ async def signin_with_google():
 
 
 @router.get("/auth/google/callback")
-async def google_auth_callback(request: Request, response: Response):
+async def google_auth_callback(
+    request: Request, 
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service)
+):
     """
     Google OAuth2 callback endpoint. Handles user info from Google and issues access token.
 
@@ -193,15 +202,15 @@ async def google_auth_callback(request: Request, response: Response):
     """
     with google_sso:
         user = await google_sso.verify_and_process(request)
-        check_user = await service.authenticate_user(
+        check_user = await auth_service.authenticate_user(
             username_or_email=user.email, provider=user.provider
         )
         if not check_user:
-            user_provider = service.extract_user_provider(user)
+            user_provider = auth_service.extract_user_provider(user)
             user_provider = ProviderUserCreate(**user_provider)
-            await create_user_provider(user_provider)
-        access_token = service.create_access_token(data={"sub": user.email})
-        await service.set_refresh_cookie_and_history(
+            await user_service.create_user_provider(user_provider)
+        access_token = auth_service.create_access_token(data={"sub": user.email})
+        await auth_service.set_refresh_cookie_and_history(
             response, user.email, request, config
         )
         response.set_cookie(
@@ -232,7 +241,12 @@ async def signin_with_github():
 
 
 @router.get("/auth/github/callback")
-async def github_auth_callback(request: Request, response: Response):
+async def github_auth_callback(
+    request: Request, 
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service)
+):
     """
     GitHub OAuth2 callback endpoint. Handles user info from GitHub and issues access token.
 
@@ -245,15 +259,15 @@ async def github_auth_callback(request: Request, response: Response):
     """
     with github_sso:
         user = await github_sso.verify_and_process(request)
-        check_user = await service.authenticate_user(
+        check_user = await auth_service.authenticate_user(
             username_or_email=user.email, provider=user.provider
         )
         if not check_user:
-            user_provider = service.extract_user_provider(user)
+            user_provider = auth_service.extract_user_provider(user)
             user_provider = ProviderUserCreate(**user_provider)
-            await create_user_provider(user_provider)
-        access_token = service.create_access_token(data={"sub": user.email})
-        await service.set_refresh_cookie_and_history(
+            await user_service.create_user_provider(user_provider)
+        access_token = auth_service.create_access_token(data={"sub": user.email})
+        await auth_service.set_refresh_cookie_and_history(
             response, user.email, request, config
         )
         response.set_cookie(
@@ -272,7 +286,11 @@ async def github_auth_callback(request: Request, response: Response):
 
 
 @router.post("/auth/logout", response_model=LogoutResponse)
-async def logout(request: Request, response: Response):
+async def logout(
+    request: Request, 
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Log out the current user by deleting the refresh token cookie and invalidating the token in the database.
 
@@ -280,10 +298,9 @@ async def logout(request: Request, response: Response):
         LogoutResponse: Message indicating logout success.
     """
 
-    
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
-        await service.delete_refresh_token(refresh_token)
+        await auth_service.delete_refresh_token(refresh_token)
         response.delete_cookie(
             key="refresh_token",
             path="/",
@@ -305,7 +322,10 @@ async def logout(request: Request, response: Response):
 @router.post("/auth/send-verification", response_model=EmailVerificationResponse)
 @limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def send_email_verification(
-    request: Request, request_data: EmailVerificationRequest, background_tasks: BackgroundTasks
+    request: Request, 
+    request_data: EmailVerificationRequest, 
+    background_tasks: BackgroundTasks,
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Send a verification email to the user for email verification.
@@ -317,23 +337,18 @@ async def send_email_verification(
     Returns:
         EmailVerificationResponse: Message indicating email sent or error.
     """
-    success = await service.resend_verification_email(request_data.email, background_tasks)
+    success = await auth_service.resend_verification_email(request_data.email, background_tasks)
     if success:
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
-        # We can raise a DomainException here if we want to be explicit, but the original code raised HTTP Exception
-        # The logic was: if not success, raise EmailNotFoundOrVerified
-        # Since EmailNotFoundOrVerified is an HTTP Exception, we should ideally use a Domain Exception if we want to be consistent.
-        # However, checking src/auth/http_exceptions.py, EmailNotFoundOrVerified is likely a DetailedHTTPException.
-        # We can keep raising it directly or create a Domain equivalent.
-        # For strictness, let's keep raising the HTTP Exception for now as it inherits from DetailedHTTPException which is handled.
-        # But wait, DetailedHTTPException is handled by `detailed_http_exception_handler`.
-        # So raising it is fine!
         raise EmailNotFoundOrVerified()
 
 
 @router.post("/auth/verify-email", response_model=VerifyEmailResponse)
-async def verify_email_endpoint(request_data: VerifyEmailRequest):
+async def verify_email_endpoint(
+    request_data: VerifyEmailRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Verify user's email using the provided token.
 
@@ -344,7 +359,7 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
         VerifyEmailResponse: Message indicating verification result.
     """
     
-    success = await service.verify_email(request_data.token)
+    success = await auth_service.verify_email(request_data.token)
     if success:
         return VerifyEmailResponse(message=ErrorCode.EMAIL_VERIFIED_SUCCESS)
     else:
@@ -354,7 +369,12 @@ async def verify_email_endpoint(request_data: VerifyEmailRequest):
 # Password Reset Endpoints
 @router.post("/auth/forgot-password", response_model=PasswordResetResponse)
 @limiter.limit(f"{config.auth_requests_per_minute}/minute")
-async def forgot_password(request: Request, request_data: PasswordResetRequest, background_tasks: BackgroundTasks):
+async def forgot_password(
+    request: Request, 
+    request_data: PasswordResetRequest, 
+    background_tasks: BackgroundTasks,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Send a password reset email to the user.
 
@@ -365,12 +385,15 @@ async def forgot_password(request: Request, request_data: PasswordResetRequest, 
     Returns:
         PasswordResetResponse: Message indicating reset email sent.
     """
-    await service.send_password_reset(request_data.email, background_tasks)
+    await auth_service.send_password_reset(request_data.email, background_tasks)
     return PasswordResetResponse(message=ErrorCode.PASSWORD_RESET_SENT)
 
 
 @router.post("/auth/reset-password", response_model=PasswordResetConfirmResponse)
-async def reset_password_endpoint(request_data: PasswordResetConfirmRequest):
+async def reset_password_endpoint(
+    request_data: PasswordResetConfirmRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Reset the user's password using the provided token and new password.
 
@@ -394,7 +417,7 @@ async def reset_password_endpoint(request_data: PasswordResetConfirmRequest):
     if not password_rules.validate(request_data.new_password):
         raise PasswordPolicyViolationError()
 
-    success = await service.reset_password(
+    success = await auth_service.reset_password(
         request_data.token, request_data.new_password
     )
     if success:

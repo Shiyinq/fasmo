@@ -1,23 +1,55 @@
 from datetime import datetime
-from src.database import database_instance
+from typing import Optional, List, Dict
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from src.api_keys.schemas import CreateAPIKey
 
+class ApiKeyRepository:
+    def __init__(self, db: AsyncIOMotorDatabase):
+        self.collection = db["api_keys"]
 
-async def insert_api_key(api_key_data: dict):
-    return await database_instance.database["api_keys"].insert_one(api_key_data)
+    async def insert_api_key(self, api_key_data: CreateAPIKey):
+        return await self.collection.insert_one(api_key_data.model_dump())
 
+    async def find_user_api_key(self, user_id: str) -> Optional[dict]:
+        return await self.collection.find_one({"userId": user_id})
 
-async def find_user_api_key(user_id: str):
-    return await database_instance.database["api_keys"].find_one({"userId": user_id})
+    async def delete_user_api_key(self, user_id: str):
+        return await self.collection.delete_one({"userId": user_id})
 
+    async def update_last_used_api_key(self, user_id: str):
+        return await self.collection.update_one(
+            {"userId": user_id}, 
+            {"$set": {"lastUsedAt": datetime.now()}}
+        )
 
-async def delete_user_api_key(user_id: dict):
-    return await database_instance.database["api_keys"].delete_one({"userId": user_id})
-
-
-async def update_last_used_api_key(user_id: str):
-    return await database_instance.database["api_keys"].update_one({"userId": user_id}, {"$set": {"lastUsedAt": datetime.now()}})
-
-
-async def find_api_key(query: str, length=None):
-    cursor = database_instance.database["api_keys"].aggregate(query)
-    return await cursor.to_list(length=length)
+    async def find_user_by_hash_key(self, hash_key: str) -> Optional[Dict]:
+        pipeline = [
+            {
+                '$match': {
+                    'hashKey': hash_key
+                }
+            }, {
+                '$lookup': {
+                    'from': 'users', 
+                    'localField': 'userId', 
+                    'foreignField': 'userId', 
+                    'as': 'user'
+                }
+            }, {
+                '$unwind': {
+                    'path': '$user', 
+                    'preserveNullAndEmptyArrays': True
+                }
+            }, {
+                '$project': {
+                    'userId': 1, 
+                    'profilePicture': '$user.profilePicture', 
+                    'name': '$user.name', 
+                    'username': '$user.username', 
+                    'email': '$user.email'
+                }
+            }
+        ]
+        cursor = self.collection.aggregate(pipeline)
+        result = await cursor.to_list(length=1)
+        return result[0] if result else None
