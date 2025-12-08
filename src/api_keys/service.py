@@ -57,7 +57,7 @@ async def update_last_used_api_key(user_id: str) -> bool:
     return updated.modified_count == 1
 
 
-async def validate_api_key(api_key: str) -> bool:
+async def validate_api_key(api_key: str) -> dict:
     hash_key = hash_token(api_key)
     query = [
         {
