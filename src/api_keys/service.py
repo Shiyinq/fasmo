@@ -1,5 +1,5 @@
 import secrets
-from fastapi import BackgroundTasks
+from src.interfaces import BackgroundTaskRunner
 from src.config import config
 from src.logging_config import create_logger
 from src.api_keys.exceptions import (
@@ -13,12 +13,14 @@ from src.api_keys.constants import Info
 from src.utils import hash_token
 from src.api_keys.repository import ApiKeyRepository
 
+
 logger = create_logger("api_keys_service", __name__)
 
 
 class ApiKeyService:
-    def __init__(self, repository: ApiKeyRepository):
+    def __init__(self, repository: ApiKeyRepository, background_tasks: BackgroundTaskRunner):
         self.repository = repository
+        self.background_tasks = background_tasks
 
     async def create_api_key(self, user_id: str) -> APIKeysResponse:
         try:
@@ -58,7 +60,7 @@ class ApiKeyService:
         updated = await self.repository.update_last_used_api_key(user_id)
         return updated.modified_count == 1
 
-    async def validate_api_key(self, api_key: str, background_tasks: BackgroundTasks = None) -> dict:
+    async def validate_api_key(self, api_key: str) -> dict:
         hash_key = hash_token(api_key)
 
         try:
@@ -66,10 +68,8 @@ class ApiKeyService:
             if not user:
                 raise InvalidAPIKeyError()
             
-            if background_tasks:
-                background_tasks.add_task(self.update_last_used_api_key, user['userId'])
-            else:
-                await self.update_last_used_api_key(user['userId'])
+            # Use injected background tasks runner
+            self.background_tasks.add_task(self.update_last_used_api_key, user['userId'])
 
             return user
         except InvalidAPIKeyError:

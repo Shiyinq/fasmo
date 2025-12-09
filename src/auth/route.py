@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Request, Response, BackgroundTasks
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_sso.sso.github import GithubSSO
@@ -9,7 +9,6 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from src.auth.service import AuthService
-from src.auth.email_service import EmailService
 from src.auth.constants import ErrorCode, Info
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
@@ -40,7 +39,8 @@ from src.http_exceptions import InternalServerError
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
 from src.users.service import UserService
-from src.dependencies import get_auth_service, get_user_service, get_email_service
+from src.users.service import UserService
+from src.dependencies import get_auth_service, get_user_service
 
 
 router = APIRouter()
@@ -326,9 +326,7 @@ async def logout(
 async def send_email_verification(
     request: Request, 
     request_data: EmailVerificationRequest, 
-    background_tasks: BackgroundTasks,
-    auth_service: AuthService = Depends(get_auth_service),
-    email_service: EmailService = Depends(get_email_service)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Send a verification email to the user for email verification.
@@ -342,13 +340,7 @@ async def send_email_verification(
     """
     result = await auth_service.resend_verification_email(request_data.email)
     if result:
-        token, username, email = result
-        background_tasks.add_task(
-            email_service.send_email_verification, 
-            email, 
-            token, 
-            username
-        )
+        # Email is sent inside resend_verification_email
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
         # Don't reveal if user doesn't exist or is already verified
@@ -383,9 +375,7 @@ async def verify_email_endpoint(
 async def forgot_password(
     request: Request, 
     request_data: PasswordResetRequest, 
-    background_tasks: BackgroundTasks,
-    auth_service: AuthService = Depends(get_auth_service),
-    email_service: EmailService = Depends(get_email_service)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Send a password reset email to the user.
@@ -398,14 +388,7 @@ async def forgot_password(
         PasswordResetResponse: Message indicating reset email sent.
     """
     result = await auth_service.create_password_reset_token(request_data.email)
-    if result:
-        token, username, email = result
-        background_tasks.add_task(
-            email_service.send_password_reset, 
-            email, 
-            token, 
-            username
-        )
+    # Email is sent inside create_password_reset_token if result is not None
         
     return PasswordResetResponse(message=ErrorCode.PASSWORD_RESET_SENT)
 
