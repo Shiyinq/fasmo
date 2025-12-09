@@ -26,7 +26,7 @@ def get_db():
 
 
 def get_email_service() -> EmailService:
-    # Use AsyncBackgroundRunner like we did for SecurityService and ApiKeyService
+
     background_runner = AsyncBackgroundRunner()
     return EmailService(background_runner)
 
@@ -41,7 +41,7 @@ def get_api_key_repository(db=Depends(get_db)) -> ApiKeyRepository:
 def get_api_key_service(
     repo: ApiKeyRepository = Depends(get_api_key_repository)
 ) -> ApiKeyService:
-    # Use AsyncBackgroundRunner for consistent background task handling
+
     background_runner = AsyncBackgroundRunner()
     return ApiKeyService(repo, background_runner)
 
@@ -59,12 +59,12 @@ def get_auth_repository(db=Depends(get_db)) -> AuthRepository:
 from src.infrastructure import AsyncBackgroundRunner
 
 def get_security_service(
-    # background_tasks argument removed because we use our own runner
+
     auth_repo: AuthRepository = Depends(get_auth_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     email_service: EmailService = Depends(get_email_service)
 ) -> SecurityService:
-    # Use AsyncBackgroundRunner to ensure tasks run even if exception is raised
+
     background_runner = AsyncBackgroundRunner()
     return SecurityService(auth_repo, user_repo, email_service, background_runner)
 

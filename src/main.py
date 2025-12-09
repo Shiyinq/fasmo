@@ -22,16 +22,16 @@ from src.utils_db import create_indexes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to the database
+
     await database_instance.connect()
-    # Create indexes on startup
+
     await create_indexes()
     yield
-    # Shutdown: Close the database connection
+
     await database_instance.close()
 
 
-# Setup rate limiter with global default limits
+
 limiter = Limiter(
     key_func=get_remote_address, 
     default_limits=[f"{config.default_requests_per_minute}/minute"]
@@ -46,11 +46,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Exception Handlers
+
 app.add_exception_handler(DomainException, domain_exception_handler)
 app.add_exception_handler(DetailedHTTPException, detailed_http_exception_handler)
 
-# Add rate limiter to app
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -58,7 +58,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.middleware("http")
 async def limit_upload_size(request: Request, call_next):
-    # Max body size: 1 MB (adjust if you need to handle file uploads)
+
     max_upload_size = config.max_upload_size_bytes 
     content_length = request.headers.get("content-length")
     if content_length:

@@ -34,5 +34,5 @@ class Database:
             self.logger.info("Database connection closed.")
 
 
-# Create a global instance, but don't connect yet
+
 database_instance = Database()
