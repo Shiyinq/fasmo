@@ -5,7 +5,7 @@ from src.exceptions import DomainException
 from src.http_exceptions import DetailedHTTPException
 from src.logging_config import create_logger
 
-# Users Exceptions
+
 from src.users.exceptions import (
     UserCreationError,
     UsernameAlreadyExistsError,
@@ -19,7 +19,7 @@ from src.users.http_exceptions import (
 )
 from src.users.exceptions import AccountLocked as DomainAccountLocked, EmailNotVerified as DomainEmailNotVerified
 
-# Auth Exceptions
+
 from src.auth.exceptions import (
     IncorrectCredentialsError,
     InvalidRefreshTokenError,
@@ -43,7 +43,7 @@ from src.auth.http_exceptions import (
     EmailNotVerified,
 )
 
-# API Keys Exceptions
+
 from src.api_keys.exceptions import (
     APIKeyCreationError,
     APIKeyDeletionError,
@@ -55,27 +55,27 @@ from src.api_keys.http_exceptions import (
     APIKeyNotFound,
 )
 
-# Create central logger for exceptions
+
 logger = create_logger("exceptions", __name__)
 
 
 async def domain_exception_handler(request: Request, exc: DomainException):
-    # Log the exception with context
+
     logger.warning(
         f"Domain exception occurred: type={type(exc).__name__}, message={str(exc)}, path={request.url.path}"
     )
 
-    # Users
+
     if isinstance(exc, UsernameAlreadyExistsError):
         return await detailed_http_exception_handler(request, UsernameTaken())
     if isinstance(exc, EmailAlreadyExistsError):
         return await detailed_http_exception_handler(request, EmailTaken())
     if isinstance(exc, (UserCreationError, ProviderUserCreationError)):
-        # For server errors, we might want to log as error instead of warning
+
         logger.error(f"Critical domain error: {str(exc)}")
         return await detailed_http_exception_handler(request, ServerError())
 
-    # Auth
+
     if isinstance(exc, IncorrectCredentialsError):
         return await detailed_http_exception_handler(request, IncorrectEmailOrPassword())
     if isinstance(exc, InvalidRefreshTokenError):
@@ -94,13 +94,13 @@ async def domain_exception_handler(request: Request, exc: DomainException):
     if isinstance(exc, PasswordPolicyViolationError):
         return await detailed_http_exception_handler(request, PasswordPolicyViolation())
 
-    # User Status
+
     if isinstance(exc, DomainAccountLocked):
         return await detailed_http_exception_handler(request, AccountLocked())
     if isinstance(exc, DomainEmailNotVerified):
         return await detailed_http_exception_handler(request, EmailNotVerified())
 
-    # API Keys
+
     if isinstance(exc, APIKeyCreationError):
         return await detailed_http_exception_handler(request, APIKeyCreateError())
     if isinstance(exc, APIKeyDeletionError):
@@ -108,11 +108,8 @@ async def domain_exception_handler(request: Request, exc: DomainException):
     if isinstance(exc, APIKeyNotFoundError):
         return await detailed_http_exception_handler(request, APIKeyNotFound())
 
-    # Default fallback
-    # Sanitize error message for logging to avoid leaking potential secrets in connection strings etc.
+
     error_msg = str(exc)
-    # Basic sanitization: remove potential secret keys or passwords if they appear in standard formats
-    # This is a basic filter, can be expanded.
     if "password" in error_msg.lower() or "secret" in error_msg.lower() or "key" in error_msg.lower():
          error_msg = "Error details redacted for security"
     

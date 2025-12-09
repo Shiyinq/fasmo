@@ -5,18 +5,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # App
+
     ENV: str = "dev"
     SECRET_KEY: SecretStr
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_MAX_AGE_DAYS: int = 30
 
-    # DB
+
     MONGODB_URI: SecretStr
     DB_NAME: str = "fasmo"
 
-    # External Auth
+
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: SecretStr
     GOOGLE_REDIRECT_URI: str
@@ -24,28 +24,28 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: SecretStr
     GITHUB_REDIRECT_URI: str
 
-    # Frontend
+
     FRONTEND_URL: str
     ORIGINS: str
 
-    # Email
+
     RESEND_API_KEY: SecretStr
     EMAIL_FROM: str = "onboarding@resend.dev"
     EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
     PASSWORD_RESET_EXPIRE_HOURS: int = 1
 
-    # Security
+
     MAX_LOGIN_ATTEMPTS: int = 5
     ACCOUNT_LOCKOUT_MINUTES: int = 15
     AUTH_REQUESTS_PER_MINUTE: int = 60
     DEFAULT_REQUESTS_PER_MINUTE: int = 120
 
-    # Logging
+
     LOG_LEVEL: str = "INFO"
     LOG_DESTINATION: str = "console"
     LOG_PATH: str = "/var/log/fasmo/"
 
-    # Internal
+
     API_KEY_PREFIX: str = "ffk_"
     DB_MAX_POOL_SIZE: int = 50
     MAX_UPLOAD_SIZE_BYTES: int = 1_048_576  # 1 MB
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         if not self.ORIGINS:
             if self.is_env_dev:
-                # Strictly allow only common frontend dev ports, remove generic wildcard potential
+
                 return ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"]
             else:
                 raise ValueError(
@@ -94,18 +94,17 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def secret_key(self) -> str:
-        # Security: Ensure secret key is strong enough (min 32 chars)
+
         secret_value = self.SECRET_KEY.get_secret_value()
         if len(secret_value) < 32:
-             # In production this should be a hard error, but for dev we can just warn or error.
-             # Let's be strict to enforce good habits.
+
              if not self.is_env_dev: # Allow short key in dev for convenience, but strict in prod
                  raise ValueError("SECRET_KEY must be at least 32 characters long in production")
         return secret_value
 
     @property
     def algorithm(self) -> str:
-        # Security: Enforce allowed algorithms, forbid 'none'
+
         allowed_algos = ["HS256", "RS256"]
         algo = self.ALGORITHM or "HS256" # Default to HS256 if None
         if algo.lower() == "none" or algo not in allowed_algos:
