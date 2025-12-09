@@ -34,7 +34,7 @@ class SecurityService:
 
     async def save_token(self, user_id: str, token: str, token_type: str, expire_hours: int):
         """Save verification token to general collection"""
-        # Delete old tokens for this user and type first
+
         await self.auth_repo.delete_verification_tokens_by_user(user_id, token_type)
 
         expires_at = datetime.now(timezone.utc) + timedelta(hours=expire_hours)
@@ -67,9 +67,9 @@ class SecurityService:
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-        # Check if token expired
+
         if expires_at < datetime.now(timezone.utc):
-            # Delete expired token
+
             await self.delete_token(token, token_type)
             return None
 
@@ -82,10 +82,10 @@ class SecurityService:
         if not token_data:
             return None
 
-        # Mark user email as verified
+
         await self.user_repo.set_email_verified(token_data["userId"])
 
-        # Delete token after successful verification
+
         await self.delete_token(token, "email_verification")
 
         return token_data["userId"]
@@ -131,15 +131,15 @@ class SecurityService:
 
     async def handle_failed_login(self, user_id: str, email: str, username: str):
         """Handle failed login with security measures"""
-        # Increment failed attempts
+
         await self.increment_failed_login_attempts(user_id)
 
-        # Check if account needs to be locked
+
         user = await self.user_repo.find_one({"userId": user_id})
         if user and user.get("failedLoginAttempts", 0) >= config.max_login_attempts:
             await self.lock_account(user_id, config.account_lockout_minutes)
 
-            # Send email notification in background
+
             self.background_tasks.add_task(
                 self.email_service.send_account_locked_notification,
                 email,

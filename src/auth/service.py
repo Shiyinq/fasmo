@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
-# passlib removed
+
 
 from src.auth.repository import AuthRepository
 from src.users.repository import UserRepository
@@ -25,7 +25,7 @@ from src.utils import hash_token
 
 from src.utils import hash_token
 
-# pwd_context removed, moved to SecurityService
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
 
 logger = create_logger("auth_service", __name__)
@@ -56,7 +56,7 @@ class AuthService:
         return encoded_jwt
 
     async def get_user(self, username_or_email: str) -> Optional[UserLogin]:
-        # Normalize input to lowercase for consistent querying
+
         username_or_email = username_or_email.lower()
         query = {
             "$or": [
@@ -94,7 +94,7 @@ class AuthService:
         if lock_status["is_locked"]:
             raise AccountLocked()
 
-        # Check email verification for non-provider login
+
         if provider is None and not user.isEmailVerified:
             raise EmailNotVerified()
 
@@ -105,7 +105,7 @@ class AuthService:
             )
             raise IncorrectCredentialsError()
 
-        # Reset failed attempts if login successful
+
         await self.security_service.reset_failed_login_attempts(user.userId)
         return user
 
@@ -206,8 +206,7 @@ class AuthService:
 
         return refresh_token
 
-    # Email verification functions
-    # Email verification functions
+
     async def create_email_verification_token(self, user_id: str) -> str:
         """Create and save email verification token"""
         token = self.security_service.create_token()
@@ -223,8 +222,7 @@ class AuthService:
         user_id = await self.security_service.verify_email_token(token_hash)
         return user_id is not None
 
-    # Password reset functions
-    # Password reset functions
+
     async def create_password_reset_token(self, email: str) -> Optional[tuple[str, str, str]]:
         """
         Create and save password reset token. 
@@ -240,7 +238,7 @@ class AuthService:
             user.userId, token_hash, "password_reset", config.password_reset_expire_hours
         )
         
-        # Send email directly
+
         await self.email_service.send_password_reset(user.email, token, user.username)
         
         return token, user.username, user.email
@@ -254,15 +252,15 @@ class AuthService:
 
         # Update password using userId
         hashed_password = await self.get_password_hash(new_password)
-        # Fix: Use UserRepository instead of database_instance
+
         await self.user_repo.update_one(
             {"userId": token_data["userId"]}, {"$set": {"password": hashed_password}}
         )
 
-        # Delete token
+
         await self.security_service.delete_token(token_hash, "password_reset")
 
-        # Reset failed attempts
+
         user = await self.user_repo.find_one({"userId": token_data["userId"]})
         if user:
             await self.security_service.reset_failed_login_attempts(user["userId"])
@@ -284,7 +282,7 @@ class AuthService:
 
         token = await self.create_email_verification_token(user.userId)
         
-        # Send email directly
+
         await self.email_service.send_email_verification(user.email, token, user.username)
         
         return token, user.username, user.email

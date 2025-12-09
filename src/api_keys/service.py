@@ -68,7 +68,7 @@ class ApiKeyService:
             if not user:
                 raise InvalidAPIKeyError()
             
-            # Use injected background tasks runner
+
             self.background_tasks.add_task(self.update_last_used_api_key, user['userId'])
 
             return user
