@@ -14,6 +14,8 @@ from src.logging_config import create_logger
 from src.database import database_instance
 from src.api_keys.repository import ApiKeyRepository
 from src.api_keys.service import ApiKeyService
+from src.auth.security_service import SecurityService
+from src.auth.email_service import EmailService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
 logger = create_logger("dependencies", __name__)
@@ -21,6 +23,13 @@ logger = create_logger("dependencies", __name__)
 
 def get_db():
     return database_instance.database
+
+
+def get_email_service() -> EmailService:
+    return EmailService()
+
+
+
 
 
 def get_api_key_repository(db=Depends(get_db)) -> ApiKeyRepository:
@@ -31,6 +40,9 @@ def get_api_key_service(repo: ApiKeyRepository = Depends(get_api_key_repository)
     return ApiKeyService(repo)
 
 
+
+
+
 def get_user_repository(db=Depends(get_db)) -> UserRepository:
     return UserRepository(db)
 
@@ -38,19 +50,33 @@ def get_user_repository(db=Depends(get_db)) -> UserRepository:
 def get_auth_repository(db=Depends(get_db)) -> AuthRepository:
     return AuthRepository(db)
 
+from src.infrastructure import AsyncBackgroundRunner
+
+def get_security_service(
+    # background_tasks argument removed because we use our own runner
+    auth_repo: AuthRepository = Depends(get_auth_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    email_service: EmailService = Depends(get_email_service)
+) -> SecurityService:
+    # Use AsyncBackgroundRunner to ensure tasks run even if exception is raised
+    background_runner = AsyncBackgroundRunner()
+    return SecurityService(auth_repo, user_repo, email_service, background_runner)
+
+
 
 def get_auth_service(
     auth_repo: AuthRepository = Depends(get_auth_repository),
-    user_repo: UserRepository = Depends(get_user_repository)
+    user_repo: UserRepository = Depends(get_user_repository),
+    security_service: SecurityService = Depends(get_security_service)
 ) -> AuthService:
-    return AuthService(auth_repo, user_repo)
+    return AuthService(auth_repo, user_repo, security_service)
 
 
 def get_user_service(
     user_repo: UserRepository = Depends(get_user_repository),
-    auth_service: AuthService = Depends(get_auth_service)
+    security_service: SecurityService = Depends(get_security_service)
 ) -> UserService:
-    return UserService(user_repo, auth_service)
+    return UserService(user_repo, security_service)
 
 
 async def get_current_user(

@@ -17,6 +17,7 @@ from src.users.http_exceptions import (
     EmailTaken,
     ServerError,
 )
+from src.users.exceptions import AccountLocked as DomainAccountLocked, EmailNotVerified as DomainEmailNotVerified
 
 # Auth Exceptions
 from src.auth.exceptions import (
@@ -38,6 +39,8 @@ from src.auth.http_exceptions import (
     PasswordResetTokenInvalid,
     PasswordsNotMatch,
     PasswordPolicyViolation,
+    AccountLocked,
+    EmailNotVerified,
 )
 
 # API Keys Exceptions
@@ -90,6 +93,12 @@ async def domain_exception_handler(request: Request, exc: DomainException):
         return await detailed_http_exception_handler(request, PasswordsNotMatch())
     if isinstance(exc, PasswordPolicyViolationError):
         return await detailed_http_exception_handler(request, PasswordPolicyViolation())
+
+    # User Status
+    if isinstance(exc, DomainAccountLocked):
+        return await detailed_http_exception_handler(request, AccountLocked())
+    if isinstance(exc, DomainEmailNotVerified):
+        return await detailed_http_exception_handler(request, EmailNotVerified())
 
     # API Keys
     if isinstance(exc, APIKeyCreationError):

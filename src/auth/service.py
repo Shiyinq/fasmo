@@ -3,10 +3,12 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
 
-from fastapi import BackgroundTasks, Response, Request
+from fastapi import Response, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
-from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
+# passlib removed
 
 from src.auth.repository import AuthRepository
 from src.users.repository import UserRepository
@@ -21,21 +23,24 @@ from src.config import config
 from src.users.exceptions import AccountLocked, EmailNotVerified
 from src.utils import hash_token
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from src.utils import hash_token
+
+# pwd_context removed, moved to SecurityService
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
 
 logger = create_logger("auth_service", __name__)
 
 class AuthService:
-    def __init__(self, auth_repo: AuthRepository, user_repo: UserRepository):
+    def __init__(self, auth_repo: AuthRepository, user_repo: UserRepository, security_service: SecurityService):
         self.auth_repo = auth_repo
         self.user_repo = user_repo
+        self.security_service = security_service
 
     async def verify_password(self, plain_password, hashed_password) -> str:
-        return await asyncio.to_thread(pwd_context.verify, plain_password, hashed_password)
+        return await asyncio.to_thread(self.security_service.verify_password, plain_password, hashed_password)
 
     async def get_password_hash(self, password) -> str:
-        return await asyncio.to_thread(pwd_context.hash, password)
+        return await asyncio.to_thread(self.security_service.get_password_hash, password)
 
     def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
         to_encode = data.copy()
@@ -84,7 +89,7 @@ class AuthService:
             return False
 
         # Check account lock status
-        lock_status = await SecurityService.check_account_lock_status(user.userId)
+        lock_status = await self.security_service.check_account_lock_status(user.userId)
         if lock_status["is_locked"]:
             raise AccountLocked()
 
@@ -94,13 +99,13 @@ class AuthService:
 
         if password and not is_valid_password:
             # Handle failed login
-            await SecurityService.handle_failed_login(
+            await self.security_service.handle_failed_login(
                 user.userId, user.email, user.username
             )
             raise IncorrectCredentialsError()
 
         # Reset failed attempts if login successful
-        await SecurityService.reset_failed_login_attempts(user.userId)
+        await self.security_service.reset_failed_login_attempts(user.userId)
         return user
 
     def extract_user_provider(self, user) -> Dict[str, str]:
@@ -201,42 +206,44 @@ class AuthService:
         return refresh_token
 
     # Email verification functions
-    async def send_email_verification(self, user_id: str, email: str, username: str, background_tasks: BackgroundTasks):
-        """Send email verification"""
-        token = SecurityService.create_token()
+    # Email verification functions
+    async def create_email_verification_token(self, user_id: str) -> str:
+        """Create and save email verification token"""
+        token = self.security_service.create_token()
         token_hash = hash_token(token)
-        await SecurityService.save_token(
+        await self.security_service.save_token(
             user_id, token_hash, "email_verification", config.email_verification_expire_hours
         )
-        # Run email sending in background
-        background_tasks.add_task(EmailService.send_email_verification, email, token, username)
         return token
 
     async def verify_email(self, token: str) -> bool:
         """Verify email with token"""
         token_hash = hash_token(token)
-        user_id = await SecurityService.verify_email_token(token_hash)
+        user_id = await self.security_service.verify_email_token(token_hash)
         return user_id is not None
 
     # Password reset functions
-    async def send_password_reset(self, email: str, background_tasks: BackgroundTasks) -> bool:
-        """Send password reset email"""
+    # Password reset functions
+    async def create_password_reset_token(self, email: str) -> Optional[tuple[str, str, str]]:
+        """
+        Create and save password reset token. 
+        Returns (token, username, email) if user exists, else None.
+        """
         user = await self.get_user(email)
         if not user:
-            return False  # Don't reveal if email not exists
+            return None  # Don't reveal if email not exists
 
-        token = SecurityService.create_token()
+        token = self.security_service.create_token()
         token_hash = hash_token(token)
-        await SecurityService.save_token(
+        await self.security_service.save_token(
             user.userId, token_hash, "password_reset", config.password_reset_expire_hours
         )
-        background_tasks.add_task(EmailService.send_password_reset, email, token, user.username)
-        return True
+        return token, user.username, user.email
 
     async def reset_password(self, token: str, new_password: str) -> bool:
         """Reset password with token"""
         token_hash = hash_token(token)
-        token_data = await SecurityService.verify_token(token_hash, "password_reset")
+        token_data = await self.security_service.verify_token(token_hash, "password_reset")
         if not token_data:
             return False
 
@@ -248,24 +255,27 @@ class AuthService:
         )
 
         # Delete token
-        await SecurityService.delete_token(token_hash, "password_reset")
+        await self.security_service.delete_token(token_hash, "password_reset")
 
         # Reset failed attempts
         user = await self.user_repo.find_one({"userId": token_data["userId"]})
         if user:
-            await SecurityService.reset_failed_login_attempts(user["userId"])
-            await SecurityService.unlock_account(user["userId"])
+            await self.security_service.reset_failed_login_attempts(user["userId"])
+            await self.security_service.unlock_account(user["userId"])
 
         return True
 
-    async def resend_verification_email(self, email: str, background_tasks: BackgroundTasks) -> bool:
-        """Resend verification email"""
+    async def resend_verification_email(self, email: str) -> Optional[tuple[str, str, str]]:
+        """
+        Resend verification email.
+        Returns (token, username, email) if eligible, else None.
+        """
         user = await self.get_user(email)
         if not user:
-            return False
+            return None
 
         if user.isEmailVerified:
-            return False  # Already verified
+            return None  # Already verified
 
-        await self.send_email_verification(user.userId, user.email, user.username, background_tasks)
-        return True
+        token = await self.create_email_verification_token(user.userId)
+        return token, user.username, user.email

@@ -1,9 +1,10 @@
 from typing import Dict, Union
+import asyncio
 
 from fastapi import BackgroundTasks
 from pymongo.errors import DuplicateKeyError
 
-from src.auth.service import AuthService
+from src.auth.security_service import SecurityService
 from src.logging_config import create_logger
 from src.users.repository import UserRepository
 from src.users.constants import Info
@@ -18,11 +19,11 @@ from src.users.schemas import ProviderUserCreate, UserCreate, UserCreated, UserC
 logger = create_logger("users_service", __name__)
 
 class UserService:
-    def __init__(self, user_repo: UserRepository, auth_service: AuthService):
+    def __init__(self, user_repo: UserRepository, security_service: SecurityService):
         self.user_repo = user_repo
-        self.auth_service = auth_service
+        self.security_service = security_service
 
-    async def base_create_user(self, user) -> UserCreated:
+    async def base_create_user(self, user: UserCreate) -> UserCreated:
         try:
             user_data = user.to_dict()
             # Normalize to lowercase
@@ -32,33 +33,38 @@ class UserService:
                 user_data["email"] = user_data["email"].lower()
                 
             if "password" in user_data:
-                user_data["password"] = await self.auth_service.get_password_hash(user_data["password"])
+                # Use SecurityService instance
+                user_data["password"] = await asyncio.to_thread(self.security_service.get_password_hash, user_data["password"])
                 
             await self.user_repo.insert_user(user_data)
             return UserCreated()
         except DuplicateKeyError as dk:
-            dk = str(dk)
-            if "username" in dk:
+            # Check keyPattern if available (robust way)
+            if dk.details and "keyPattern" in dk.details:
+                keys = dk.details["keyPattern"]
+                if "username" in keys:
+                    raise UsernameAlreadyExistsError()
+                elif "email" in keys:
+                    raise EmailAlreadyExistsError()
+            
+            # Fallback for some mongo versions or mock
+            dk_str = str(dk)
+            if "username" in dk_str:
                 raise UsernameAlreadyExistsError()
-            elif "email" in dk:
+            elif "email" in dk_str:
                 raise EmailAlreadyExistsError()
         except Exception as e:
             logger.exception(f"Unexpected error in base_create_user: {str(e)}")
             raise UserCreationError()
 
 
-    async def create_user(self, user: UserCreate, background_tasks: BackgroundTasks) -> Union[UserCreatedWithEmail, UserCreated]:
-        await self.base_create_user(user)
-
-        # Send email verification for regular signup
-        try:
-            await self.auth_service.send_email_verification(user.userId, user.email, user.username, background_tasks)
-            # Return success message with email verification info
-            return UserCreatedWithEmail()
-        except Exception as e:
-            logger.warning(f"Error sending verification email: {e}")
-            # Don't fail the signup if email fails, return basic success message
-            return UserCreated()
+    async def create_user(self, user: UserCreate) -> UserCreated:
+        """
+        Create a new user.
+        Note: Email verification is now handled by the controller/route layer
+        to keep the service clean from framework specifics (BackgroundTasks).
+        """
+        return await self.base_create_user(user)
 
 
     async def create_user_provider(self, user: ProviderUserCreate) -> UserCreated:
@@ -76,6 +82,14 @@ class UserService:
             await self.user_repo.insert_user(user_data)
             return UserCreated()
         except DuplicateKeyError as dk:
+            # Check keyPattern if available (robust way)
+            if dk.details and "keyPattern" in dk.details:
+                keys = dk.details["keyPattern"]
+                if "username" in keys:
+                    raise UsernameAlreadyExistsError()
+                elif "email" in keys:
+                    raise EmailAlreadyExistsError()
+
             dk = str(dk)
             if "username" in dk:
                 raise UsernameAlreadyExistsError()

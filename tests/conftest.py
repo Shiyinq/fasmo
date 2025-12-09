@@ -52,7 +52,7 @@ async def client(db):
     ) as ac:
         yield ac
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_resend_email(monkeypatch):
     """
     Mock resend.Emails.send to prevent sending actual emails.
