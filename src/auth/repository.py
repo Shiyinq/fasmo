@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 class AuthRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
+        self.db = db
         self.refresh_tokens = db["refresh_tokens"]
         self.login_history = db["login_history"]
 
@@ -28,4 +29,23 @@ class AuthRepository:
     async def find_last_login_history(self, user_id: str) -> Optional[dict]:
         return await self.login_history.find_one(
             {"userId": user_id}, sort=[("loginAt", -1)]
+        )
+
+    # Verification Tokens
+    async def delete_verification_tokens_by_user(self, user_id: str, token_type: str):
+        return await self.db["verification_tokens"].delete_many(
+            {"userId": user_id, "tokenType": token_type}
+        )
+
+    async def insert_verification_token(self, data: dict):
+        return await self.db["verification_tokens"].insert_one(data)
+
+    async def find_verification_token(self, token: str, token_type: str) -> Optional[dict]:
+        return await self.db["verification_tokens"].find_one(
+            {"hashToken": token, "tokenType": token_type}
+        )
+
+    async def delete_verification_token(self, token: str, token_type: str):
+        return await self.db["verification_tokens"].delete_one(
+            {"hashToken": token, "tokenType": token_type}
         )

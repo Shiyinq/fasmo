@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, BackgroundTasks
 
 from src import dependencies
 from src.auth.schemas import UserCurrent
+from src.auth.email_service import EmailService
 from src.logging_config import create_logger
-from src.users.schemas import UserCreate, UserCreateResponse
+from src.users.schemas import UserCreate, UserCreateResponse, UserCreatedWithEmail, UserCreated
 from src.users.service import UserService
-from src.dependencies import get_user_service
+from src.auth.service import AuthService
+from src.dependencies import get_user_service, get_auth_service, get_email_service
 
 router = APIRouter()
 
@@ -16,17 +18,33 @@ logger = create_logger("users", __name__)
 async def signup(
     user: UserCreate, 
     background_tasks: BackgroundTasks,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
+    auth_service: AuthService = Depends(get_auth_service),
+    email_service: EmailService = Depends(get_email_service)
 ):
     """
     Register a new user account.
     """
-    new_user = await user_service.create_user(user, background_tasks)
+    # 1. Create User (Service Layer - Pure Business Logic)
+    await user_service.create_user(user)
     
-    logger.info(
-        f"User created successfully: user_id={getattr(new_user, 'userId', None)}"
-    )
-    return new_user
+    # 2. Trigger Email Verification (Controller Layer - Usage of Framework "BackgroundTasks")
+    try:
+        token = await auth_service.create_email_verification_token(user.userId)
+        background_tasks.add_task(
+            email_service.send_email_verification, 
+            user.email, 
+            token, 
+            user.username
+        )
+        logger.info(
+            f"User created successfully and verification email sent: user_id={user.userId}"
+        )
+        return UserCreatedWithEmail()
+    except Exception as e:
+        logger.warning(f"User created but error sending verification email: {e}")
+        # Don't fail the signup if email fails, return basic success message
+        return UserCreated()
 
 
 @router.get("/users/profile", response_model=UserCurrent)

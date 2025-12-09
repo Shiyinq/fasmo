@@ -9,6 +9,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from src.auth.service import AuthService
+from src.auth.email_service import EmailService
 from src.auth.constants import ErrorCode, Info
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
@@ -39,7 +40,8 @@ from src.http_exceptions import InternalServerError
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
 from src.users.service import UserService
-from src.dependencies import get_auth_service, get_user_service
+from src.dependencies import get_auth_service, get_user_service, get_email_service
+
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -325,7 +327,8 @@ async def send_email_verification(
     request: Request, 
     request_data: EmailVerificationRequest, 
     background_tasks: BackgroundTasks,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    email_service: EmailService = Depends(get_email_service)
 ):
     """
     Send a verification email to the user for email verification.
@@ -337,10 +340,18 @@ async def send_email_verification(
     Returns:
         EmailVerificationResponse: Message indicating email sent or error.
     """
-    success = await auth_service.resend_verification_email(request_data.email, background_tasks)
-    if success:
+    result = await auth_service.resend_verification_email(request_data.email)
+    if result:
+        token, username, email = result
+        background_tasks.add_task(
+            email_service.send_email_verification, 
+            email, 
+            token, 
+            username
+        )
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
+        # Don't reveal if user doesn't exist or is already verified
         raise EmailNotFoundOrVerified()
 
 
@@ -373,7 +384,8 @@ async def forgot_password(
     request: Request, 
     request_data: PasswordResetRequest, 
     background_tasks: BackgroundTasks,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    email_service: EmailService = Depends(get_email_service)
 ):
     """
     Send a password reset email to the user.
@@ -385,7 +397,16 @@ async def forgot_password(
     Returns:
         PasswordResetResponse: Message indicating reset email sent.
     """
-    await auth_service.send_password_reset(request_data.email, background_tasks)
+    result = await auth_service.create_password_reset_token(request_data.email)
+    if result:
+        token, username, email = result
+        background_tasks.add_task(
+            email_service.send_password_reset, 
+            email, 
+            token, 
+            username
+        )
+        
     return PasswordResetResponse(message=ErrorCode.PASSWORD_RESET_SENT)
 
 

@@ -10,8 +10,7 @@ resend.api_key = config.resend_api_key
 
 
 class EmailService:
-    @staticmethod
-    async def send_email_verification(email: str, token: str, username: str):
+    async def send_email_verification(self, email: str, token: str, username: str):
         """Send email verification"""
         verification_url = f"{config.frontend_url}/auth/verify-email?token={token}"
 
@@ -53,8 +52,7 @@ class EmailService:
             )
             return None
 
-    @staticmethod
-    async def send_password_reset(email: str, token: str, username: str):
+    async def send_password_reset(self, email: str, token: str, username: str):
         """Send password reset email"""
         reset_url = f"{config.frontend_url}/auth/reset-password?token={token}"
 
@@ -96,9 +94,8 @@ class EmailService:
             )
             return None
 
-    @staticmethod
     async def send_account_locked_notification(
-        email: str, username: str, lockout_duration: int
+        self, email: str, username: str, lockout_duration: int
     ):
         """Send account locked notification"""
         html_content = f"""
