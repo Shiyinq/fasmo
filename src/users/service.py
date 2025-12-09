@@ -30,20 +30,20 @@ class UserService:
     async def base_create_user(self, user: UserCreate) -> UserCreated:
         try:
             user_data = user.to_dict()
-            # Normalize to lowercase
+
             if "username" in user_data:
                 user_data["username"] = user_data["username"].lower()
             if "email" in user_data:
                 user_data["email"] = user_data["email"].lower()
                 
             if "password" in user_data:
-                # Use SecurityService instance
+
                 user_data["password"] = await asyncio.to_thread(self.security_service.get_password_hash, user_data["password"])
                 
             await self.user_repo.insert_user(user_data)
             return UserCreated()
         except DuplicateKeyError as dk:
-            # Check keyPattern if available (robust way)
+
             if dk.details and "keyPattern" in dk.details:
                 keys = dk.details["keyPattern"]
                 if "username" in keys:
@@ -66,16 +66,16 @@ class UserService:
         """
         Create a new user and trigger email verification.
         """
-        # 1. Create User
+
         await self.base_create_user(user)
 
-        # 2. Trigger Email Verification
+
         try:
-            # Logic similar to AuthService.create_email_verification_token
+
             # We use security_service directly to avoid circular dependency with AuthService
             token = self.security_service.create_token()
             token_hash = hash_token(token)
-            # We need config here, ensure it's imported
+
             from src.config import config
             await self.security_service.save_token(
                 user.userId, token_hash, "email_verification", config.email_verification_expire_hours
@@ -93,10 +93,10 @@ class UserService:
 
 
     async def create_user_provider(self, user: ProviderUserCreate) -> UserCreated:
-        # For provider users, mark email as verified since it's already verified by the provider
+
         try:
             user_data = user.to_dict()
-            # Normalize to lowercase
+
             if "username" in user_data:
                 user_data["username"] = user_data["username"].lower()
             if "email" in user_data:
@@ -107,7 +107,7 @@ class UserService:
             await self.user_repo.insert_user(user_data)
             return UserCreated()
         except DuplicateKeyError as dk:
-            # Check keyPattern if available (robust way)
+
             if dk.details and "keyPattern" in dk.details:
                 keys = dk.details["keyPattern"]
                 if "username" in keys:

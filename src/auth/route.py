@@ -340,7 +340,7 @@ async def send_email_verification(
     """
     result = await auth_service.resend_verification_email(request_data.email)
     if result:
-        # Email is sent inside resend_verification_email
+
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
         # Don't reveal if user doesn't exist or is already verified
@@ -388,7 +388,7 @@ async def forgot_password(
         PasswordResetResponse: Message indicating reset email sent.
     """
     result = await auth_service.create_password_reset_token(request_data.email)
-    # Email is sent inside create_password_reset_token if result is not None
+
         
     return PasswordResetResponse(message=ErrorCode.PASSWORD_RESET_SENT)
 
