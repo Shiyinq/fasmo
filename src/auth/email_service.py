@@ -1,5 +1,7 @@
 import resend
+import asyncio
 
+from src.interfaces import BackgroundTaskRunner
 from src.config import config
 from src.logging_config import create_logger
 
@@ -10,6 +12,18 @@ resend.api_key = config.resend_api_key
 
 
 class EmailService:
+    def __init__(self, background_tasks: BackgroundTaskRunner = None):
+        self.background_tasks = background_tasks
+
+    async def _send_email(self, payload: dict):
+        try:
+            logger.info(f"Sending email to {payload['to']}")
+            # Run blocking I/O (network request) in thread pool
+            await asyncio.to_thread(resend.Emails.send, payload)
+            logger.info(f"Email sent successfully to {payload['to']}")
+        except Exception as e:
+            logger.exception(f"Error sending email to {payload['to']}: {e}")
+
     async def send_email_verification(self, email: str, token: str, username: str):
         """Send email verification"""
         verification_url = f"{config.frontend_url}/auth/verify-email?token={token}"
@@ -34,23 +48,18 @@ class EmailService:
         </div>
         """
 
-        try:
-            logger.info(f"Sending verification email to {email}")
-            r = resend.Emails.send(
-                {
-                    "from": config.email_from,
-                    "to": email,
-                    "subject": "Verify Your Email - Fasmo",
-                    "html": html_content,
-                }
-            )
-            logger.info(f"Email sent successfully to {email}")
-            return r
-        except Exception as e:
-            logger.exception(
-                f"[EMAIL_VERIFICATION] Error sending email to {email}: {e}"
-            )
-            return None
+        payload = {
+            "from": config.email_from,
+            "to": email,
+            "subject": "Verify Your Email - Fasmo",
+            "html": html_content,
+        }
+        
+        if self.background_tasks:
+            self.background_tasks.add_task(self._send_email, payload)
+        else:
+            await self._send_email(payload)
+
 
     async def send_password_reset(self, email: str, token: str, username: str):
         """Send password reset email"""
@@ -76,23 +85,18 @@ class EmailService:
         </div>
         """
 
-        try:
-            logger.info(f"Sending password reset email to {email}")
-            r = resend.Emails.send(
-                {
-                    "from": config.email_from,
-                    "to": email,
-                    "subject": "Reset Your Password - Fasmo",
-                    "html": html_content,
-                }
-            )
-            logger.info(f"Email sent successfully to {email}")
-            return r
-        except Exception as e:
-            logger.exception(
-                f"[PASSWORD_RESET] Error sending password reset email to {email}: {e}"
-            )
-            return None
+        payload = {
+            "from": config.email_from,
+            "to": email,
+            "subject": "Reset Your Password - Fasmo",
+            "html": html_content,
+        }
+        
+        if self.background_tasks:
+            self.background_tasks.add_task(self._send_email, payload)
+        else:
+            await self._send_email(payload)
+
 
     async def send_account_locked_notification(
         self, email: str, username: str, lockout_duration: int
@@ -111,22 +115,15 @@ class EmailService:
         </div>
         """
 
-        try:
-            logger.info(
-                f"[ACCOUNT_LOCKED] Sending account locked notification to {email}"
-            )
-            r = resend.Emails.send(
-                {
-                    "from": config.email_from,
-                    "to": email,
-                    "subject": "Account Locked - Fasmo",
-                    "html": html_content,
-                }
-            )
-            logger.info(f"Email sent successfully to {email}")
-            return r
-        except Exception as e:
-            logger.exception(
-                f"[ACCOUNT_LOCKED] Error sending account locked notification to {email}: {e}"
-            )
-            return None
+        payload = {
+            "from": config.email_from,
+            "to": email,
+            "subject": "Account Locked - Fasmo",
+            "html": html_content,
+        }
+        
+        if self.background_tasks:
+            self.background_tasks.add_task(self._send_email, payload)
+        else:
+            await self._send_email(payload)
+

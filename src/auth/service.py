@@ -31,10 +31,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
 logger = create_logger("auth_service", __name__)
 
 class AuthService:
-    def __init__(self, auth_repo: AuthRepository, user_repo: UserRepository, security_service: SecurityService):
+    def __init__(self, auth_repo: AuthRepository, user_repo: UserRepository, security_service: SecurityService, email_service: EmailService):
         self.auth_repo = auth_repo
         self.user_repo = user_repo
         self.security_service = security_service
+        self.email_service = email_service
 
     async def verify_password(self, plain_password, hashed_password) -> str:
         return await asyncio.to_thread(self.security_service.verify_password, plain_password, hashed_password)
@@ -238,6 +239,10 @@ class AuthService:
         await self.security_service.save_token(
             user.userId, token_hash, "password_reset", config.password_reset_expire_hours
         )
+        
+        # Send email directly
+        await self.email_service.send_password_reset(user.email, token, user.username)
+        
         return token, user.username, user.email
 
     async def reset_password(self, token: str, new_password: str) -> bool:
@@ -278,4 +283,8 @@ class AuthService:
             return None  # Already verified
 
         token = await self.create_email_verification_token(user.userId)
+        
+        # Send email directly
+        await self.email_service.send_email_verification(user.email, token, user.username)
+        
         return token, user.username, user.email

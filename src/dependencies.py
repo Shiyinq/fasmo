@@ -26,7 +26,9 @@ def get_db():
 
 
 def get_email_service() -> EmailService:
-    return EmailService()
+    # Use AsyncBackgroundRunner like we did for SecurityService and ApiKeyService
+    background_runner = AsyncBackgroundRunner()
+    return EmailService(background_runner)
 
 
 
@@ -36,8 +38,12 @@ def get_api_key_repository(db=Depends(get_db)) -> ApiKeyRepository:
     return ApiKeyRepository(db)
 
 
-def get_api_key_service(repo: ApiKeyRepository = Depends(get_api_key_repository)) -> ApiKeyService:
-    return ApiKeyService(repo)
+def get_api_key_service(
+    repo: ApiKeyRepository = Depends(get_api_key_repository)
+) -> ApiKeyService:
+    # Use AsyncBackgroundRunner for consistent background task handling
+    background_runner = AsyncBackgroundRunner()
+    return ApiKeyService(repo, background_runner)
 
 
 
@@ -67,16 +73,18 @@ def get_security_service(
 def get_auth_service(
     auth_repo: AuthRepository = Depends(get_auth_repository),
     user_repo: UserRepository = Depends(get_user_repository),
-    security_service: SecurityService = Depends(get_security_service)
+    security_service: SecurityService = Depends(get_security_service),
+    email_service: EmailService = Depends(get_email_service)
 ) -> AuthService:
-    return AuthService(auth_repo, user_repo, security_service)
+    return AuthService(auth_repo, user_repo, security_service, email_service)
 
 
 def get_user_service(
     user_repo: UserRepository = Depends(get_user_repository),
-    security_service: SecurityService = Depends(get_security_service)
+    security_service: SecurityService = Depends(get_security_service),
+    email_service: EmailService = Depends(get_email_service)
 ) -> UserService:
-    return UserService(user_repo, security_service)
+    return UserService(user_repo, security_service, email_service)
 
 
 async def get_current_user(
@@ -88,7 +96,7 @@ async def get_current_user(
     try:
         if token.startswith(config.api_key_prefix):
             try:
-                user = await api_key_service.validate_api_key(token, background_tasks)
+                user = await api_key_service.validate_api_key(token)
                 return UserCurrent(**user)
             except Exception as e:
                 logger.warning(f"API Key validation failed: {str(e)}")
