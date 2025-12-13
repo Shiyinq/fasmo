@@ -1,10 +1,5 @@
 import secrets
 
-
-
-from src.auth.http_exceptions import InvalidCSRFToken
-
-
 class CSRFService:
     CSRF_TOKEN_COOKIE = "csrf_token"
     CSRF_TOKEN_HEADER = "X-CSRF-Token"
