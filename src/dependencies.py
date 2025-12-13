@@ -12,7 +12,7 @@ from src.auth.repository import AuthRepository
 from src.auth.schemas import UserCurrent
 from src.auth.security_service import SecurityService
 from src.auth.service import AuthService
-from src.config import config
+from src.config import Settings, config
 from src.database import database_instance
 from src.logging_config import create_logger
 from src.users.repository import UserRepository
@@ -26,7 +26,11 @@ def get_db():
     return database_instance.database
 
 
-def get_email_service() -> EmailService:
+def get_settings() -> Settings:
+    return config
+
+
+def get_email_service(config: Settings = Depends(get_settings)) -> EmailService:
     background_runner = AsyncBackgroundRunner()
     return EmailService(config, background_runner)
 
@@ -37,6 +41,7 @@ def get_api_key_repository(db=Depends(get_db)) -> ApiKeyRepository:
 
 def get_api_key_service(
     repo: ApiKeyRepository = Depends(get_api_key_repository),
+    config: Settings = Depends(get_settings),
 ) -> ApiKeyService:
     background_runner = AsyncBackgroundRunner()
     return ApiKeyService(repo, background_runner, config)
@@ -57,6 +62,7 @@ def get_security_service(
     auth_repo: AuthRepository = Depends(get_auth_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     email_service: EmailService = Depends(get_email_service),
+    config: Settings = Depends(get_settings),
 ) -> SecurityService:
     background_runner = AsyncBackgroundRunner()
     return SecurityService(
@@ -69,6 +75,7 @@ def get_auth_service(
     user_repo: UserRepository = Depends(get_user_repository),
     security_service: SecurityService = Depends(get_security_service),
     email_service: EmailService = Depends(get_email_service),
+    config: Settings = Depends(get_settings),
 ) -> AuthService:
     return AuthService(auth_repo, user_repo, security_service, email_service, config)
 
@@ -77,6 +84,7 @@ def get_user_service(
     user_repo: UserRepository = Depends(get_user_repository),
     security_service: SecurityService = Depends(get_security_service),
     email_service: EmailService = Depends(get_email_service),
+    config: Settings = Depends(get_settings),
 ) -> UserService:
     return UserService(user_repo, security_service, email_service, config)
 
@@ -84,8 +92,10 @@ def get_user_service(
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
+
     auth_service: AuthService = Depends(get_auth_service),
     background_tasks: BackgroundTasks = None,
+    config: Settings = Depends(get_settings),
 ):
     if token.startswith(config.api_key_prefix):
         try:
@@ -103,7 +113,9 @@ async def get_current_user(
     return UserCurrent(**user.dict())
 
 
-def require_csrf_protection(request: Request):
+def require_csrf_protection(
+    request: Request, config: Settings = Depends(get_settings)
+):
     if request.method == "OPTIONS":
         return True
 
@@ -133,7 +145,7 @@ def require_csrf_protection(request: Request):
     return True
 
 
-def get_google_sso() -> GoogleSSO:
+def get_google_sso(config: Settings = Depends(get_settings)) -> GoogleSSO:
     return GoogleSSO(
         client_id=config.google_client_id,
         client_secret=config.google_client_secret,
@@ -142,7 +154,7 @@ def get_google_sso() -> GoogleSSO:
     )
 
 
-def get_github_sso() -> GithubSSO:
+def get_github_sso(config: Settings = Depends(get_settings)) -> GithubSSO:
     return GithubSSO(
         client_id=config.github_client_id,
         client_secret=config.github_client_secret,

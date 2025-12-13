@@ -36,11 +36,12 @@ from src.auth.schemas import (
     VerifyEmailResponse,
 )
 from src.auth.service import AuthService
-from src.config import config
+from src.config import Settings, config
 from src.dependencies import (
     get_auth_service,
     get_github_sso,
     get_google_sso,
+    get_settings,
     get_user_service,
 )
 from src.logging_config import create_logger
@@ -65,7 +66,7 @@ def _extract_request_info(request: Request):
     return device, ip, browser, user_agent
 
 
-def _set_auth_cookies(response: Response, refresh_token: str):
+def _set_auth_cookies(response: Response, refresh_token: str, config: Settings):
     response.set_cookie(
         key=REFRESH_TOKEN_COOKIE_KEY,
         value=refresh_token,
@@ -76,10 +77,10 @@ def _set_auth_cookies(response: Response, refresh_token: str):
         secure=not config.is_env_dev,
     )
 
-    _set_csrf_cookie(response)
+    _set_csrf_cookie(response, config)
 
 
-def _set_csrf_cookie(response: Response):
+def _set_csrf_cookie(response: Response, config: Settings):
     csrf_token = CSRFService.generate_csrf_token()
     response.set_cookie(
         key=CSRFService.CSRF_TOKEN_COOKIE,
@@ -92,7 +93,9 @@ def _set_csrf_cookie(response: Response):
     )
 
 
-def _set_access_token_cookie(response: Response, access_token: str):
+def _set_access_token_cookie(
+    response: Response, access_token: str, config: Settings
+):
     response.set_cookie(
         key="token",
         value=access_token,
@@ -117,6 +120,7 @@ async def signin_with_email_and_password(
     form_data: OAuth2PasswordRequestForm = Depends(),
     response: Response = None,
     auth_service: AuthService = Depends(get_auth_service),
+    config: Settings = Depends(get_settings),
 ):
     """
     Sign in using email and password. Returns an access token and sets a refresh token cookie.
@@ -138,8 +142,8 @@ async def signin_with_email_and_password(
         user.userId, device, ip, browser, user_agent
     )
 
-    _set_auth_cookies(response, refresh_token)
-    _set_access_token_cookie(response, access_token)
+    _set_auth_cookies(response, refresh_token, config)
+    _set_access_token_cookie(response, access_token, config)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -148,6 +152,7 @@ async def refresh_access_token(
     request: Request,
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
+    config: Settings = Depends(get_settings),
 ):
     """
     Refresh the access token using a valid refresh token from cookies.
@@ -197,9 +202,9 @@ async def refresh_access_token(
         user_agent_raw=user_agent,
     )
     access_token = auth_service.create_access_token(data={"sub": token_data["userId"]})
-    _set_access_token_cookie(response, access_token)
+    _set_access_token_cookie(response, access_token, config)
 
-    _set_csrf_cookie(response)
+    _set_csrf_cookie(response, config)
 
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -225,6 +230,7 @@ async def google_auth_callback(
     auth_service: AuthService = Depends(get_auth_service),
     user_service: UserService = Depends(get_user_service),
     google_sso: GoogleSSO = Depends(get_google_sso),
+    config: Settings = Depends(get_settings),
 ):
     """
     Google OAuth2 callback endpoint. Handles user info from Google and issues access token.
@@ -252,8 +258,8 @@ async def google_auth_callback(
             user.email, device, ip, browser, user_agent
         )
 
-        _set_auth_cookies(response, refresh_token)
-        _set_access_token_cookie(response, access_token)
+        _set_auth_cookies(response, refresh_token, config)
+        _set_access_token_cookie(response, access_token, config)
         redirect_url = (
             f"{config.frontend_url}/auth/callback?access_token={access_token}"
         )
@@ -279,6 +285,7 @@ async def github_auth_callback(
     auth_service: AuthService = Depends(get_auth_service),
     user_service: UserService = Depends(get_user_service),
     github_sso: GithubSSO = Depends(get_github_sso),
+    config: Settings = Depends(get_settings),
 ):
     """
     GitHub OAuth2 callback endpoint. Handles user info from GitHub and issues access token.
@@ -306,8 +313,8 @@ async def github_auth_callback(
             user.email, device, ip, browser, user_agent
         )
 
-        _set_auth_cookies(response, refresh_token)
-        _set_access_token_cookie(response, access_token)
+        _set_auth_cookies(response, refresh_token, config)
+        _set_access_token_cookie(response, access_token, config)
         redirect_url = (
             f"{config.frontend_url}/auth/callback?access_token={access_token}"
         )
@@ -319,6 +326,7 @@ async def logout(
     request: Request,
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
+    config: Settings = Depends(get_settings),
 ):
     """
     Log out the current user by deleting the refresh token cookie and invalidating the token in the database.
