@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     MONGODB_URI: SecretStr
     DB_NAME: str = "fasmo"
 
+    OAUTHLIB_INSECURE_TRANSPORT: bool = False
+
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: SecretStr
     GOOGLE_REDIRECT_URI: str
@@ -90,6 +92,10 @@ class Settings(BaseSettings):
     @property
     def db_name(self) -> str:
         return self.DB_NAME
+
+    @property
+    def oauthlib_insecure_transport(self) -> bool:
+        return self.OAUTHLIB_INSECURE_TRANSPORT
 
     @computed_field
     @property
