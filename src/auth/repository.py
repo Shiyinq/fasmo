@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from typing import Optional
+
 from motor.motor_asyncio import AsyncIOMotorDatabase
+
 
 class AuthRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -40,7 +42,9 @@ class AuthRepository:
     async def insert_verification_token(self, data: dict):
         return await self.db["verification_tokens"].insert_one(data)
 
-    async def find_verification_token(self, token: str, token_type: str) -> Optional[dict]:
+    async def find_verification_token(
+        self, token: str, token_type: str
+    ) -> Optional[dict]:
         return await self.db["verification_tokens"].find_one(
             {"hashToken": token, "tokenType": token_type}
         )

@@ -27,7 +27,6 @@ class RequestIdFilter(logging.Filter):
 def create_logger(app_name, name):
     logger = logging.getLogger(name)
 
-
     if logger.handlers:
         return logger
 
@@ -38,9 +37,8 @@ def create_logger(app_name, name):
     )
 
     handler = None
-    
-    if config.log_destination.lower() == "file":
 
+    if config.log_destination.lower() == "file":
         LOG_PATH = "logs/" if config.is_env_dev else config.log_path
         if not os.path.exists(LOG_PATH):
             os.makedirs(LOG_PATH, exist_ok=True)
@@ -52,34 +50,28 @@ def create_logger(app_name, name):
         handler.suffix = "%Y-%m-%d"
 
         handler.setFormatter(Formatter(LOGGING_FORMAT))
-        
+
     else:
-
         handler = logging.StreamHandler(sys.stdout)
-        
-        if config.is_env_dev:
 
+        if config.is_env_dev:
             formatter = ColourizedFormatter(
                 "{levelprefix} [{asctime}] [{bind}] [{request_id}] {message}",
                 style="{",
-                use_colors=True
+                use_colors=True,
             )
         else:
-
             formatter = Formatter(LOGGING_FORMAT)
 
         handler.setFormatter(formatter)
 
-
     handler.setLevel(LOGGING_LEVEL)
-
 
     logger.setLevel(LOGGING_LEVEL)
     logger.addHandler(handler)
-    
 
     logger.addFilter(RequestIdFilter())
-    
+
     logger.propagate = False  # Prevent propagation to root logger
 
     return logger

@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from password_validator import PasswordValidator
 from pydantic import BaseModel, EmailStr, Field, model_validator
