@@ -9,7 +9,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from src.auth.service import AuthService
-from src.auth.constants import ErrorCode, Info
+from src.auth.constants import ErrorCode, Info, REFRESH_TOKEN_COOKIE_KEY, REFRESH_TOKEN_MAX_AGE
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
     IncorrectCredentialsError,
@@ -41,6 +41,62 @@ from src.users.schemas import ProviderUserCreate
 from src.users.service import UserService
 from src.users.service import UserService
 from src.dependencies import get_auth_service, get_user_service
+
+
+def _extract_request_info(request: Request):
+    user_agent = request.headers.get("user-agent", "")
+    x_forwarded_for = request.headers.get("x-forwarded-for")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0].strip()
+    else:
+        ip = request.client.host if request.client else "unknown"
+    from user_agents import parse as parse_ua
+
+    ua = parse_ua(user_agent)
+    device = f"{ua.device.family or 'Unknown'} {ua.os.family or 'Unknown'} {ua.os.version_string or ''}".strip()
+    browser = (
+        f"{ua.browser.family or 'Unknown'} {ua.browser.version_string or ''}".strip()
+    )
+    return device, ip, browser, user_agent
+
+
+def _set_auth_cookies(response: Response, refresh_token: str):
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=refresh_token,
+        httponly=True,
+        max_age=REFRESH_TOKEN_MAX_AGE,
+        path="/",
+        samesite="lax",
+        secure=not config.is_env_dev,
+    )
+    
+    _set_csrf_cookie(response)
+
+
+def _set_csrf_cookie(response: Response):
+    csrf_token = CSRFService.generate_csrf_token()
+    response.set_cookie(
+        key=CSRFService.CSRF_TOKEN_COOKIE,
+        value=csrf_token,
+        httponly=False,
+        max_age=3600,
+        path="/",
+        samesite="lax",
+        secure=not config.is_env_dev,
+    )
+
+
+def _set_access_token_cookie(response: Response, access_token: str):
+    response.set_cookie(
+        key="token",
+        value=access_token,
+        httponly=True,
+        max_age=config.access_token_expire_minutes * 60,
+        path="/",
+        samesite="lax",
+        secure=not config.is_env_dev,
+    )
 
 
 router = APIRouter()
@@ -85,18 +141,14 @@ async def signin_with_email_and_password(
 
     user = await auth_service.authenticate_user(form_data.username, form_data.password)
     access_token = auth_service.create_access_token(data={"sub": user.userId})
-    await auth_service.set_refresh_cookie_and_history(
-        response, user.userId, request, config
+    
+    device, ip, browser, user_agent = _extract_request_info(request)
+    refresh_token = await auth_service.register_refresh_token_activity(
+        user.userId, device, ip, browser, user_agent
     )
-    response.set_cookie(
-        key="token",
-        value=access_token,
-        httponly=True,
-        max_age=config.access_token_expire_minutes * 60,
-        path="/",
-        samesite="lax",
-        secure=not config.is_env_dev,
-    )
+    
+    _set_auth_cookies(response, refresh_token)
+    _set_access_token_cookie(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -128,7 +180,7 @@ async def refresh_access_token(
         logger.warning("Token data not found")
         raise InvalidRefreshTokenError() 
 
-    device, ip, browser, user_agent = auth_service.extract_request_info(request)
+    device, ip, browser, user_agent = _extract_request_info(request)
     if (
         token_data["device"] != device
         or token_data["ip"] != ip
@@ -156,17 +208,9 @@ async def refresh_access_token(
         user_agent_raw=user_agent,
     )
     access_token = auth_service.create_access_token(data={"sub": token_data["userId"]})
-    response.set_cookie(
-        key="token",
-        value=access_token,
-        httponly=True,
-        max_age=config.access_token_expire_minutes * 60,
-        path="/",
-        samesite="lax",
-        secure=not config.is_env_dev,
-    )
+    _set_access_token_cookie(response, access_token)
     
-    CSRFService.set_csrf_cookie(response, config.is_env_dev)
+    _set_csrf_cookie(response)
     
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -212,18 +256,14 @@ async def google_auth_callback(
             user_provider = ProviderUserCreate(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
-        await auth_service.set_refresh_cookie_and_history(
-            response, user.email, request, config
+        
+        device, ip, browser, user_agent = _extract_request_info(request)
+        refresh_token = await auth_service.register_refresh_token_activity(
+            user.email, device, ip, browser, user_agent
         )
-        response.set_cookie(
-            key="token",
-            value=access_token,
-            httponly=True,
-            max_age=config.access_token_expire_minutes * 60,
-            path="/",
-            samesite="lax",
-            secure=not config.is_env_dev,
-        )
+        
+        _set_auth_cookies(response, refresh_token)
+        _set_access_token_cookie(response, access_token)
         redirect_url = (
             f"{config.frontend_url}/auth/callback?access_token={access_token}"
         )
@@ -269,18 +309,14 @@ async def github_auth_callback(
             user_provider = ProviderUserCreate(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
-        await auth_service.set_refresh_cookie_and_history(
-            response, user.email, request, config
+        
+        device, ip, browser, user_agent = _extract_request_info(request)
+        refresh_token = await auth_service.register_refresh_token_activity(
+            user.email, device, ip, browser, user_agent
         )
-        response.set_cookie(
-            key="token",
-            value=access_token,
-            httponly=True,
-            max_age=config.access_token_expire_minutes * 60,
-            path="/",
-            samesite="lax",
-            secure=not config.is_env_dev,
-        )
+        
+        _set_auth_cookies(response, refresh_token)
+        _set_access_token_cookie(response, access_token)
         redirect_url = (
             f"{config.frontend_url}/auth/callback?access_token={access_token}"
         )

@@ -138,5 +138,9 @@ def require_csrf_protection(request: Request):
         if "postman" in user_agent:
             return True
 
-    CSRFService.require_csrf_token(request)
+    header_token = request.headers.get(CSRFService.CSRF_TOKEN_HEADER)
+    cookie_token = request.cookies.get(CSRFService.CSRF_TOKEN_COOKIE)
+    
+    if not CSRFService.validate_csrf_token_string(header_token, cookie_token):
+        raise InvalidCSRFToken()
     return True

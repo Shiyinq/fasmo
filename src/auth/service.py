@@ -3,11 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
 
-from fastapi import Response, Request
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
+
 
 
 from src.auth.repository import AuthRepository
@@ -26,7 +22,7 @@ from src.utils import hash_token
 from src.utils import hash_token
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/signin")
+from jose import jwt
 
 logger = create_logger("auth_service", __name__)
 
@@ -168,42 +164,15 @@ class AuthService:
     async def get_last_login_history(self, user_id: str) -> Optional[dict]:
         return await self.auth_repo.find_last_login_history(user_id)
 
-    def extract_request_info(self, request):
-        user_agent = request.headers.get("user-agent", "")
-        x_forwarded_for = request.headers.get("x-forwarded-for")
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(",")[0].strip()
-        else:
-            ip = request.client.host if request.client else "unknown"
-        from user_agents import parse as parse_ua
 
-        ua = parse_ua(user_agent)
-        device = f"{ua.device.family or 'Unknown'} {ua.os.family or 'Unknown'} {ua.os.version_string or ''}".strip()
-        browser = (
-            f"{ua.browser.family or 'Unknown'} {ua.browser.version_string or ''}".strip()
-        )
-        return device, ip, browser, user_agent
 
-    async def set_refresh_cookie_and_history(self, response, user_id, request, config) -> str:
+    async def register_refresh_token_activity(self, user_id: str, device: str, ip: str, browser: str, user_agent: str) -> str:
         refresh_token = self.create_refresh_token()
         hash_refresh_token = hash_token(refresh_token)
-        device, ip, browser, user_agent = self.extract_request_info(request)
         await self.save_refresh_token(user_id, hash_refresh_token, device, ip, browser)
         await self.save_login_history(
             user_id, device, ip, browser, user_agent_raw=user_agent
         )
-        response.set_cookie(
-            key=REFRESH_TOKEN_COOKIE_KEY,
-            value=refresh_token,
-            httponly=True,
-            max_age=REFRESH_TOKEN_MAX_AGE,
-            path="/",
-            samesite="lax",
-            secure=not config.is_env_dev,
-        )
-        
-        CSRFService.set_csrf_cookie(response, config.is_env_dev)
-
         return refresh_token
 
 

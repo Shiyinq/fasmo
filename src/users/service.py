@@ -2,7 +2,7 @@ from typing import Dict, Union
 import asyncio
 from src.utils import hash_token
 
-from fastapi import BackgroundTasks
+
 from pymongo.errors import DuplicateKeyError
 
 from src.auth.security_service import SecurityService
