@@ -17,9 +17,9 @@ from src.auth.constants import (
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
     InvalidRefreshTokenError,
-    PasswordPolicyViolationError,
+    InvalidRefreshTokenError,
     PasswordResetTokenInvalidError,
-    PasswordsDoNotMatchError,
+    RefreshTokenExpiredError,
     RefreshTokenExpiredError,
     SuspiciousActivityError,
     VerificationTokenInvalidError,
@@ -441,19 +441,6 @@ async def reset_password_endpoint(
     Returns:
         PasswordResetConfirmResponse: Message indicating password reset result.
     """
-
-    if request_data.new_password != request_data.confirm_password:
-        raise PasswordsDoNotMatchError()
-
-    # Validate password strength
-    from password_validator import PasswordValidator
-
-    password_rules = PasswordValidator()
-    password_rules.min(8).max(
-        128
-    ).has().uppercase().has().lowercase().has().digits().has().symbols().no().spaces()
-    if not password_rules.validate(request_data.new_password):
-        raise PasswordPolicyViolationError()
 
     success = await auth_service.reset_password(
         request_data.token, request_data.new_password
