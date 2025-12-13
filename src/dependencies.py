@@ -26,7 +26,7 @@ def get_db():
 
 def get_email_service() -> EmailService:
     background_runner = AsyncBackgroundRunner()
-    return EmailService(background_runner)
+    return EmailService(config, background_runner)
 
 
 def get_api_key_repository(db=Depends(get_db)) -> ApiKeyRepository:
@@ -37,7 +37,7 @@ def get_api_key_service(
     repo: ApiKeyRepository = Depends(get_api_key_repository),
 ) -> ApiKeyService:
     background_runner = AsyncBackgroundRunner()
-    return ApiKeyService(repo, background_runner)
+    return ApiKeyService(repo, background_runner, config)
 
 
 def get_user_repository(db=Depends(get_db)) -> UserRepository:
@@ -57,7 +57,7 @@ def get_security_service(
     email_service: EmailService = Depends(get_email_service),
 ) -> SecurityService:
     background_runner = AsyncBackgroundRunner()
-    return SecurityService(auth_repo, user_repo, email_service, background_runner)
+    return SecurityService(auth_repo, user_repo, email_service, background_runner, config)
 
 
 def get_auth_service(
@@ -66,7 +66,7 @@ def get_auth_service(
     security_service: SecurityService = Depends(get_security_service),
     email_service: EmailService = Depends(get_email_service),
 ) -> AuthService:
-    return AuthService(auth_repo, user_repo, security_service, email_service)
+    return AuthService(auth_repo, user_repo, security_service, email_service, config)
 
 
 def get_user_service(
@@ -74,7 +74,7 @@ def get_user_service(
     security_service: SecurityService = Depends(get_security_service),
     email_service: EmailService = Depends(get_email_service),
 ) -> UserService:
-    return UserService(user_repo, security_service, email_service)
+    return UserService(user_repo, security_service, email_service, config)
 
 
 async def get_current_user(
@@ -83,16 +83,15 @@ async def get_current_user(
     auth_service: AuthService = Depends(get_auth_service),
     background_tasks: BackgroundTasks = None,
 ):
-    try:
-        if token.startswith(config.api_key_prefix):
-            try:
-                user = await api_key_service.validate_api_key(token)
-                return UserCurrent(**user)
-            except Exception as e:
-                logger.warning(f"API Key validation failed: {str(e)}")
-                raise InvalidJWTToken()  # Re-raise as 401 for consistency
+    if token.startswith(config.api_key_prefix):
+        try:
+            user = await api_key_service.validate_api_key(token)
+            return UserCurrent(**user)
+        except Exception as e:
+            logger.warning(f"API Key validation failed: {str(e)}")
+            raise InvalidJWTToken()  # Re-raise as 401 for consistency
 
-        token_data = auth_service.verify_access_token(token)
+    token_data = auth_service.verify_access_token(token)
     user = await auth_service.get_user(username_or_email=token_data.username)
     if user is None:
         logger.warning(f"User not found: {token_data.username}")

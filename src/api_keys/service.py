@@ -9,7 +9,7 @@ from src.api_keys.exceptions import (
 )
 from src.api_keys.repository import ApiKeyRepository
 from src.api_keys.schemas import APIKeysResponse, CreateAPIKey
-from src.config import config
+from src.config import Settings
 from src.interfaces import BackgroundTaskRunner
 from src.logging_config import create_logger
 from src.utils import hash_token
@@ -19,14 +19,18 @@ logger = create_logger("api_keys_service", __name__)
 
 class ApiKeyService:
     def __init__(
-        self, repository: ApiKeyRepository, background_tasks: BackgroundTaskRunner
+        self,
+        repository: ApiKeyRepository,
+        background_tasks: BackgroundTaskRunner,
+        config: Settings,
     ):
         self.repository = repository
         self.background_tasks = background_tasks
+        self.config = config
 
     async def create_api_key(self, user_id: str) -> APIKeysResponse:
         try:
-            api_key = f"{config.api_key_prefix}{secrets.token_urlsafe(32)}"
+            api_key = f"{self.config.api_key_prefix}{secrets.token_urlsafe(32)}"
             hash_key = hash_token(api_key)
             data = CreateAPIKey(userId=user_id, hashKey=hash_key)
 

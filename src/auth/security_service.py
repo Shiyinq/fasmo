@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 
 from src.auth.email_service import EmailService
 from src.auth.repository import AuthRepository
-from src.config import config
+from src.config import Settings
 from src.interfaces import BackgroundTaskRunner
 from src.users.repository import UserRepository
 
@@ -20,11 +20,13 @@ class SecurityService:
         user_repo: UserRepository,
         email_service: EmailService,
         background_tasks: BackgroundTaskRunner,
+        config: Settings,
     ):
         self.auth_repo = auth_repo
         self.user_repo = user_repo
         self.email_service = email_service
         self.background_tasks = background_tasks
+        self.config = config
 
     def verify_password(self, plain_password, hashed_password) -> str:
         return pwd_context.verify(plain_password, hashed_password)
@@ -139,12 +141,12 @@ class SecurityService:
         await self.increment_failed_login_attempts(user_id)
 
         user = await self.user_repo.find_one({"userId": user_id})
-        if user and user.get("failedLoginAttempts", 0) >= config.max_login_attempts:
-            await self.lock_account(user_id, config.account_lockout_minutes)
+        if user and user.get("failedLoginAttempts", 0) >= self.config.max_login_attempts:
+            await self.lock_account(user_id, self.config.account_lockout_minutes)
 
             self.background_tasks.add_task(
                 self.email_service.send_account_locked_notification,
                 email,
                 username,
-                config.account_lockout_minutes,
+                self.config.account_lockout_minutes,
             )

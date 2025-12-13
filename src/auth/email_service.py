@@ -2,19 +2,25 @@ import asyncio
 
 import resend
 
-from src.config import config
+from src.config import Settings
 from src.interfaces import BackgroundTaskRunner
 from src.logging_config import create_logger
 
 logger = create_logger("email", __name__)
 
 # Setup Resend
-resend.api_key = config.resend_api_key
+# Setup Resend will be done in init or globally?
+# Ideally we shouldn't have global side effects on import.
+# But for now let's keep the global resend.api_key assignment logic BUT move it to init if we want pure decoupling.
+# However, resend is a library with global state.
+# Let's injecting config first.
 
 
 class EmailService:
-    def __init__(self, background_tasks: BackgroundTaskRunner = None):
+    def __init__(self, config: Settings, background_tasks: BackgroundTaskRunner = None):
+        self.config = config
         self.background_tasks = background_tasks
+        resend.api_key = self.config.resend_api_key
 
     async def _send_email(self, payload: dict):
         try:
@@ -27,7 +33,7 @@ class EmailService:
 
     async def send_email_verification(self, email: str, token: str, username: str):
         """Send email verification"""
-        verification_url = f"{config.frontend_url}/auth/verify-email?token={token}"
+        verification_url = f"{self.config.frontend_url}/auth/verify-email?token={token}"
 
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -42,7 +48,7 @@ class EmailService:
             </div>
             <p>Or copy this link to your browser:</p>
             <p style="word-break: break-all; color: #666;">{verification_url}</p>
-            <p>This link will expire in {config.email_verification_expire_hours} hours.</p>
+            <p>This link will expire in {self.config.email_verification_expire_hours} hours.</p>
             <p>If you did not register with Fasmo, please ignore this email.</p>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px;">Fasmo</p>
@@ -50,7 +56,7 @@ class EmailService:
         """
 
         payload = {
-            "from": config.email_from,
+            "from": self.config.email_from,
             "to": email,
             "subject": "Verify Your Email - Fasmo",
             "html": html_content,
@@ -63,7 +69,7 @@ class EmailService:
 
     async def send_password_reset(self, email: str, token: str, username: str):
         """Send password reset email"""
-        reset_url = f"{config.frontend_url}/auth/reset-password?token={token}"
+        reset_url = f"{self.config.frontend_url}/auth/reset-password?token={token}"
 
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -78,7 +84,7 @@ class EmailService:
             </div>
             <p>Or copy this link to your browser:</p>
             <p style="word-break: break-all; color: #666;">{reset_url}</p>
-            <p>This link will expire in {config.password_reset_expire_hours} hour.</p>
+            <p>This link will expire in {self.config.password_reset_expire_hours} hour.</p>
             <p>If you did not request a password reset, please ignore this email. Your password will not be changed.</p>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px;">Fasmo</p>
@@ -86,7 +92,7 @@ class EmailService:
         """
 
         payload = {
-            "from": config.email_from,
+            "from": self.config.email_from,
             "to": email,
             "subject": "Reset Your Password - Fasmo",
             "html": html_content,
@@ -115,7 +121,7 @@ class EmailService:
         """
 
         payload = {
-            "from": config.email_from,
+            "from": self.config.email_from,
             "to": email,
             "subject": "Account Locked - Fasmo",
             "html": html_content,
