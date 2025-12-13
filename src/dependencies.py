@@ -57,7 +57,9 @@ def get_security_service(
     email_service: EmailService = Depends(get_email_service),
 ) -> SecurityService:
     background_runner = AsyncBackgroundRunner()
-    return SecurityService(auth_repo, user_repo, email_service, background_runner, config)
+    return SecurityService(
+        auth_repo, user_repo, email_service, background_runner, config
+    )
 
 
 def get_auth_service(

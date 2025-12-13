@@ -141,7 +141,10 @@ class SecurityService:
         await self.increment_failed_login_attempts(user_id)
 
         user = await self.user_repo.find_one({"userId": user_id})
-        if user and user.get("failedLoginAttempts", 0) >= self.config.max_login_attempts:
+        if (
+            user
+            and user.get("failedLoginAttempts", 0) >= self.config.max_login_attempts
+        ):
             await self.lock_account(user_id, self.config.account_lockout_minutes)
 
             self.background_tasks.add_task(

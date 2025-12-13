@@ -4,6 +4,7 @@ from pymongo.errors import DuplicateKeyError
 
 from src.auth.email_service import EmailService
 from src.auth.security_service import SecurityService
+from src.config import Settings
 from src.logging_config import create_logger
 from src.users.exceptions import (
     EmailAlreadyExistsError,
@@ -19,7 +20,6 @@ from src.users.schemas import (
     UserCreatedWithEmail,
 )
 from src.utils import hash_token
-from src.config import Settings
 
 logger = create_logger("users_service", __name__)
 
@@ -29,7 +29,6 @@ class UserService:
         self,
         user_repo: UserRepository,
         security_service: SecurityService,
-
         email_service: EmailService,
         config: Settings,
     ):
