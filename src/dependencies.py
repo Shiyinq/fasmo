@@ -1,6 +1,5 @@
 from fastapi import BackgroundTasks, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 
 from src.api_keys.repository import ApiKeyRepository
 from src.api_keys.service import ApiKeyService
@@ -8,7 +7,7 @@ from src.auth.csrf_service import CSRFService
 from src.auth.email_service import EmailService
 from src.auth.http_exceptions import InvalidJWTToken
 from src.auth.repository import AuthRepository
-from src.auth.schemas import TokenData, UserCurrent
+from src.auth.schemas import UserCurrent
 from src.auth.security_service import SecurityService
 from src.auth.service import AuthService
 from src.config import config
@@ -93,15 +92,7 @@ async def get_current_user(
                 logger.warning(f"API Key validation failed: {str(e)}")
                 raise InvalidJWTToken()  # Re-raise as 401 for consistency
 
-        payload = jwt.decode(token, config.secret_key, algorithms=[config.algorithm])
-        username: str = payload.get("sub")
-        if username is None:
-            logger.warning("Token does not contain sub/username")
-            raise InvalidJWTToken()
-        token_data = TokenData(username=username)
-    except JWTError as e:
-        logger.exception(f"JWTError: {str(e)}")
-        raise InvalidJWTToken()
+        token_data = auth_service.verify_access_token(token)
     user = await auth_service.get_user(username_or_email=token_data.username)
     if user is None:
         logger.warning(f"User not found: {token_data.username}")

@@ -13,6 +13,7 @@ from src.api_keys.http_exceptions import (
 )
 from src.auth.exceptions import (
     IncorrectCredentialsError,
+    InvalidJWTTokenError,
     InvalidRefreshTokenError,
     PasswordPolicyViolationError,
     PasswordResetTokenInvalidError,
@@ -25,6 +26,7 @@ from src.auth.http_exceptions import (
     AccountLocked,
     EmailNotVerified,
     IncorrectEmailOrPassword,
+    InvalidJWTToken,
     InvalidRefreshToken,
     PasswordPolicyViolation,
     PasswordResetTokenInvalid,
@@ -66,6 +68,8 @@ async def domain_exception_handler(request: Request, exc: DomainException):
         return await detailed_http_exception_handler(
             request, IncorrectEmailOrPassword()
         )
+    if isinstance(exc, InvalidJWTTokenError):
+        return await detailed_http_exception_handler(request, InvalidJWTToken())
     if isinstance(exc, InvalidRefreshTokenError):
         return await detailed_http_exception_handler(request, InvalidRefreshToken())
     if isinstance(exc, RefreshTokenExpiredError):
