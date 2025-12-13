@@ -93,7 +93,7 @@ class PasswordResetConfirmRequest(BaseModel):
 
         if not validate_password_strength(self.new_password):
             raise PasswordPolicyViolation()
-        
+
         return self
 
 
