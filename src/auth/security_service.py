@@ -9,6 +9,7 @@ from src.auth.repository import AuthRepository
 from src.config import Settings
 from src.interfaces import BackgroundTaskRunner
 from src.users.repository import UserRepository
+from src.utils import hash_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -54,6 +55,20 @@ class SecurityService:
             "createdAt": datetime.now(timezone.utc),
         }
         await self.auth_repo.insert_verification_token(data)
+
+    async def create_and_save_token(
+        self, user_id: str, token_type: str, expire_hours: int
+    ) -> str:
+        """Create token, hash it, and save to database. Returns plain token."""
+        token = self.create_token()
+        token_hash = hash_token(token)
+        await self.save_token(
+            user_id,
+            token_hash,
+            token_type,
+            expire_hours,
+        )
+        return token
 
     async def get_token(self, token: str, token_type: str) -> Optional[Dict[str, Any]]:
         """Get token data by type"""

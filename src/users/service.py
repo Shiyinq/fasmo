@@ -19,7 +19,6 @@ from src.users.schemas import (
     UserCreated,
     UserCreatedWithEmail,
 )
-from src.utils import hash_token
 
 logger = create_logger("users_service", __name__)
 
@@ -79,13 +78,8 @@ class UserService:
         await self.base_create_user(user)
 
         try:
-            # We use security_service directly to avoid circular dependency with AuthService
-            token = self.security_service.create_token()
-            token_hash = hash_token(token)
-
-            await self.security_service.save_token(
+            token = await self.security_service.create_and_save_token(
                 user.userId,
-                token_hash,
                 "email_verification",
                 self.config.email_verification_expire_hours,
             )
