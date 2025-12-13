@@ -1,5 +1,7 @@
 from fastapi import BackgroundTasks, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
+from fastapi_sso.sso.github import GithubSSO
+from fastapi_sso.sso.google import GoogleSSO
 
 from src.api_keys.repository import ApiKeyRepository
 from src.api_keys.service import ApiKeyService
@@ -129,3 +131,21 @@ def require_csrf_protection(request: Request):
     if not CSRFService.validate_csrf_token_string(header_token, cookie_token):
         raise InvalidCSRFToken()
     return True
+
+
+def get_google_sso() -> GoogleSSO:
+    return GoogleSSO(
+        client_id=config.google_client_id,
+        client_secret=config.google_client_secret,
+        redirect_uri=config.google_redirect_uri,
+        allow_insecure_http=True,
+    )
+
+
+def get_github_sso() -> GithubSSO:
+    return GithubSSO(
+        client_id=config.github_client_id,
+        client_secret=config.github_client_secret,
+        redirect_uri=config.github_redirect_uri,
+        allow_insecure_http=True,
+    )

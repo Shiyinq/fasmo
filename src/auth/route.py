@@ -17,9 +17,7 @@ from src.auth.constants import (
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
     InvalidRefreshTokenError,
-    InvalidRefreshTokenError,
     PasswordResetTokenInvalidError,
-    RefreshTokenExpiredError,
     RefreshTokenExpiredError,
     SuspiciousActivityError,
     VerificationTokenInvalidError,
@@ -39,7 +37,12 @@ from src.auth.schemas import (
 )
 from src.auth.service import AuthService
 from src.config import config
-from src.dependencies import get_auth_service, get_user_service
+from src.dependencies import (
+    get_auth_service,
+    get_github_sso,
+    get_google_sso,
+    get_user_service,
+)
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
 from src.users.service import UserService
@@ -105,20 +108,6 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 logger = create_logger("auth", __name__)
-
-github_sso = GithubSSO(
-    client_id=config.github_client_id,
-    client_secret=config.github_client_secret,
-    redirect_uri=config.github_redirect_uri,
-    allow_insecure_http=True,
-)
-
-google_sso = GoogleSSO(
-    client_id=config.google_client_id,
-    client_secret=config.google_client_secret,
-    redirect_uri=config.google_redirect_uri,
-    allow_insecure_http=True,
-)
 
 
 @router.post("/auth/signin", response_model=Token)
@@ -216,7 +205,7 @@ async def refresh_access_token(
 
 
 @router.get("/auth/google/signin")
-async def signin_with_google():
+async def signin_with_google(google_sso: GoogleSSO = Depends(get_google_sso)):
     """
     Initiate Google OAuth2 sign-in flow. Redirects user to Google login page.
 
@@ -235,6 +224,7 @@ async def google_auth_callback(
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
     user_service: UserService = Depends(get_user_service),
+    google_sso: GoogleSSO = Depends(get_google_sso),
 ):
     """
     Google OAuth2 callback endpoint. Handles user info from Google and issues access token.
@@ -271,7 +261,7 @@ async def google_auth_callback(
 
 
 @router.get("/auth/github/signin")
-async def signin_with_github():
+async def signin_with_github(github_sso: GithubSSO = Depends(get_github_sso)):
     """
     Initiate GitHub OAuth2 sign-in flow. Redirects user to GitHub login page.
 
@@ -288,6 +278,7 @@ async def github_auth_callback(
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
     user_service: UserService = Depends(get_user_service),
+    github_sso: GithubSSO = Depends(get_github_sso),
 ):
     """
     GitHub OAuth2 callback endpoint. Handles user info from GitHub and issues access token.
