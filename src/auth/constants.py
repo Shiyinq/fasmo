@@ -41,6 +41,7 @@ class DomainErrorCode:
     PASSWORD_POLICY_VIOLATION = "Password policy violation"
     USER_NOT_FOUND = "User not found"
     TOKEN_VALIDATION_FAILED = "Token validation failed"
+    INVALID_JWT_TOKEN = "Invalid JWT token"
 
 
 class Info:

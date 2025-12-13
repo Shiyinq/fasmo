@@ -71,9 +71,9 @@ class UserCreateResponse(BaseModel):
     detail: str
 
 
-class UserCreatedWithEmail(BaseModel):
+class UserCreatedWithEmail(UserCreateResponse):
     detail: str = Info.USER_CREATED_WITH_EMAIL
 
 
-class UserCreated(BaseModel):
+class UserCreated(UserCreateResponse):
     detail: str = Info.USER_CREATED

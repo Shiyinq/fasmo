@@ -14,6 +14,10 @@ class RefreshTokenExpiredError(DomainException):
     ERROR_MESSAGE = DomainErrorCode.REFRESH_TOKEN_EXPIRED
 
 
+class InvalidJWTTokenError(DomainException):
+    ERROR_MESSAGE = DomainErrorCode.INVALID_JWT_TOKEN
+
+
 class SuspiciousActivityError(DomainException):
     ERROR_MESSAGE = DomainErrorCode.SUSPICIOUS_ACTIVITY_DETECTED
 

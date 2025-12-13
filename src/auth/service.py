@@ -3,12 +3,12 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
 
-from jose import jwt
+from jose import JWTError, jwt
 
 from src.auth.email_service import EmailService
-from src.auth.exceptions import IncorrectCredentialsError
+from src.auth.exceptions import IncorrectCredentialsError, InvalidJWTTokenError
 from src.auth.repository import AuthRepository
-from src.auth.schemas import UserLogin
+from src.auth.schemas import TokenData, UserLogin
 from src.auth.security_service import SecurityService
 from src.config import config
 from src.logging_config import create_logger
@@ -57,6 +57,21 @@ class AuthService:
             to_encode, config.secret_key, algorithm=config.algorithm
         )
         return encoded_jwt
+
+    def verify_access_token(self, token: str) -> TokenData:
+        try:
+            payload = jwt.decode(
+                token, config.secret_key, algorithms=[config.algorithm]
+            )
+            username: str = payload.get("sub")
+            if username is None:
+                logger.warning("Token does not contain sub/username")
+                raise InvalidJWTTokenError()
+            token_data = TokenData(username=username)
+            return token_data
+        except JWTError as e:
+            logger.exception(f"JWTError: {str(e)}")
+            raise InvalidJWTTokenError()
 
     async def get_user(self, username_or_email: str) -> Optional[UserLogin]:
         username_or_email = username_or_email.lower()
