@@ -198,11 +198,8 @@ class AuthService:
 
     async def create_email_verification_token(self, user_id: str) -> str:
         """Create and save email verification token"""
-        token = self.security_service.create_token()
-        token_hash = hash_token(token)
-        await self.security_service.save_token(
+        token = await self.security_service.create_and_save_token(
             user_id,
-            token_hash,
             "email_verification",
             self.config.email_verification_expire_hours,
         )
@@ -225,11 +222,8 @@ class AuthService:
         if not user:
             return None  # Don't reveal if email not exists
 
-        token = self.security_service.create_token()
-        token_hash = hash_token(token)
-        await self.security_service.save_token(
+        token = await self.security_service.create_and_save_token(
             user.userId,
-            token_hash,
             "password_reset",
             self.config.password_reset_expire_hours,
         )

@@ -92,7 +92,6 @@ def get_user_service(
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     api_key_service: ApiKeyService = Depends(get_api_key_service),
-
     auth_service: AuthService = Depends(get_auth_service),
     background_tasks: BackgroundTasks = None,
     config: Settings = Depends(get_settings),
@@ -113,9 +112,7 @@ async def get_current_user(
     return UserCurrent(**user.dict())
 
 
-def require_csrf_protection(
-    request: Request, config: Settings = Depends(get_settings)
-):
+def require_csrf_protection(request: Request, config: Settings = Depends(get_settings)):
     if request.method == "OPTIONS":
         return True
 

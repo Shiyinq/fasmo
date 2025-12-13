@@ -93,9 +93,7 @@ def _set_csrf_cookie(response: Response, config: Settings):
     )
 
 
-def _set_access_token_cookie(
-    response: Response, access_token: str, config: Settings
-):
+def _set_access_token_cookie(response: Response, access_token: str, config: Settings):
     response.set_cookie(
         key="token",
         value=access_token,
