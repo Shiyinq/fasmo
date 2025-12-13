@@ -19,6 +19,7 @@ from src.users.schemas import (
     UserCreatedWithEmail,
 )
 from src.utils import hash_token
+from src.config import Settings
 
 logger = create_logger("users_service", __name__)
 
@@ -28,11 +29,14 @@ class UserService:
         self,
         user_repo: UserRepository,
         security_service: SecurityService,
+
         email_service: EmailService,
+        config: Settings,
     ):
         self.user_repo = user_repo
         self.security_service = security_service
         self.email_service = email_service
+        self.config = config
 
     async def base_create_user(self, user: UserCreate) -> UserCreated:
         try:
@@ -80,13 +84,11 @@ class UserService:
             token = self.security_service.create_token()
             token_hash = hash_token(token)
 
-            from src.config import config
-
             await self.security_service.save_token(
                 user.userId,
                 token_hash,
                 "email_verification",
-                config.email_verification_expire_hours,
+                self.config.email_verification_expire_hours,
             )
 
             await self.email_service.send_email_verification(

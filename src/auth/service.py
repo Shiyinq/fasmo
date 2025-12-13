@@ -10,7 +10,7 @@ from src.auth.exceptions import IncorrectCredentialsError, InvalidJWTTokenError
 from src.auth.repository import AuthRepository
 from src.auth.schemas import TokenData, UserLogin
 from src.auth.security_service import SecurityService
-from src.config import config
+from src.config import Settings
 from src.logging_config import create_logger
 from src.users.exceptions import AccountLocked, EmailNotVerified
 from src.users.repository import UserRepository
@@ -26,11 +26,13 @@ class AuthService:
         user_repo: UserRepository,
         security_service: SecurityService,
         email_service: EmailService,
+        config: Settings,
     ):
         self.auth_repo = auth_repo
         self.user_repo = user_repo
         self.security_service = security_service
         self.email_service = email_service
+        self.config = config
 
     async def verify_password(self, plain_password, hashed_password) -> str:
         return await asyncio.to_thread(
@@ -50,18 +52,18 @@ class AuthService:
             expire = datetime.now(timezone.utc) + expires_delta
         else:
             expire = datetime.now(timezone.utc) + timedelta(
-                minutes=config.access_token_expire_minutes
+                minutes=self.config.access_token_expire_minutes
             )
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
-            to_encode, config.secret_key, algorithm=config.algorithm
+            to_encode, self.config.secret_key, algorithm=self.config.algorithm
         )
         return encoded_jwt
 
     def verify_access_token(self, token: str) -> TokenData:
         try:
             payload = jwt.decode(
-                token, config.secret_key, algorithms=[config.algorithm]
+                token, self.config.secret_key, algorithms=[self.config.algorithm]
             )
             username: str = payload.get("sub")
             if username is None:
@@ -202,7 +204,7 @@ class AuthService:
             user_id,
             token_hash,
             "email_verification",
-            config.email_verification_expire_hours,
+            self.config.email_verification_expire_hours,
         )
         return token
 
@@ -229,7 +231,7 @@ class AuthService:
             user.userId,
             token_hash,
             "password_reset",
-            config.password_reset_expire_hours,
+            self.config.password_reset_expire_hours,
         )
 
         await self.email_service.send_password_reset(user.email, token, user.username)
