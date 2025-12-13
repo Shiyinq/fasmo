@@ -1,5 +1,7 @@
-from typing import Optional, Dict
+from typing import Optional
+
 from motor.motor_asyncio import AsyncIOMotorDatabase
+
 
 class UserRepository:
     def __init__(self, db: AsyncIOMotorDatabase):

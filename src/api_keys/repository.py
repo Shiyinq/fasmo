@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Dict, Optional
+
 from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from src.api_keys.schemas import CreateAPIKey
+
 
 class ApiKeyRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -18,37 +21,30 @@ class ApiKeyRepository:
 
     async def update_last_used_api_key(self, user_id: str):
         return await self.collection.update_one(
-            {"userId": user_id}, 
-            {"$set": {"lastUsedAt": datetime.now()}}
+            {"userId": user_id}, {"$set": {"lastUsedAt": datetime.now()}}
         )
 
     async def find_user_by_hash_key(self, hash_key: str) -> Optional[Dict]:
         pipeline = [
+            {"$match": {"hashKey": hash_key}},
             {
-                '$match': {
-                    'hashKey': hash_key
+                "$lookup": {
+                    "from": "users",
+                    "localField": "userId",
+                    "foreignField": "userId",
+                    "as": "user",
                 }
-            }, {
-                '$lookup': {
-                    'from': 'users', 
-                    'localField': 'userId', 
-                    'foreignField': 'userId', 
-                    'as': 'user'
+            },
+            {"$unwind": {"path": "$user", "preserveNullAndEmptyArrays": True}},
+            {
+                "$project": {
+                    "userId": 1,
+                    "profilePicture": "$user.profilePicture",
+                    "name": "$user.name",
+                    "username": "$user.username",
+                    "email": "$user.email",
                 }
-            }, {
-                '$unwind': {
-                    'path': '$user', 
-                    'preserveNullAndEmptyArrays': True
-                }
-            }, {
-                '$project': {
-                    'userId': 1, 
-                    'profilePicture': '$user.profilePicture', 
-                    'name': '$user.name', 
-                    'username': '$user.username', 
-                    'email': '$user.email'
-                }
-            }
+            },
         ]
         cursor = self.collection.aggregate(pipeline)
         result = await cursor.to_list(length=1)

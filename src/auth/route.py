@@ -8,18 +8,21 @@ from fastapi_sso.sso.google import GoogleSSO
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from src.auth.service import AuthService
-from src.auth.constants import ErrorCode, Info, REFRESH_TOKEN_COOKIE_KEY, REFRESH_TOKEN_MAX_AGE
+from src.auth.constants import (
+    REFRESH_TOKEN_COOKIE_KEY,
+    REFRESH_TOKEN_MAX_AGE,
+    ErrorCode,
+    Info,
+)
 from src.auth.csrf_service import CSRFService
 from src.auth.exceptions import (
-    IncorrectCredentialsError,
     InvalidRefreshTokenError,
+    PasswordPolicyViolationError,
+    PasswordResetTokenInvalidError,
+    PasswordsDoNotMatchError,
     RefreshTokenExpiredError,
     SuspiciousActivityError,
     VerificationTokenInvalidError,
-    PasswordResetTokenInvalidError,
-    PasswordsDoNotMatchError,
-    PasswordPolicyViolationError,
 )
 from src.auth.http_exceptions import EmailNotFoundOrVerified
 from src.auth.schemas import (
@@ -34,13 +37,12 @@ from src.auth.schemas import (
     VerifyEmailRequest,
     VerifyEmailResponse,
 )
+from src.auth.service import AuthService
 from src.config import config
-from src.http_exceptions import InternalServerError
+from src.dependencies import get_auth_service, get_user_service
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreate
 from src.users.service import UserService
-from src.users.service import UserService
-from src.dependencies import get_auth_service, get_user_service
 
 
 def _extract_request_info(request: Request):
@@ -70,7 +72,7 @@ def _set_auth_cookies(response: Response, refresh_token: str):
         samesite="lax",
         secure=not config.is_env_dev,
     )
-    
+
     _set_csrf_cookie(response)
 
 
@@ -125,7 +127,7 @@ async def signin_with_email_and_password(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     response: Response = None,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Sign in using email and password. Returns an access token and sets a refresh token cookie.
@@ -141,12 +143,12 @@ async def signin_with_email_and_password(
 
     user = await auth_service.authenticate_user(form_data.username, form_data.password)
     access_token = auth_service.create_access_token(data={"sub": user.userId})
-    
+
     device, ip, browser, user_agent = _extract_request_info(request)
     refresh_token = await auth_service.register_refresh_token_activity(
         user.userId, device, ip, browser, user_agent
     )
-    
+
     _set_auth_cookies(response, refresh_token)
     _set_access_token_cookie(response, access_token)
     return {"access_token": access_token, "token_type": "bearer"}
@@ -154,9 +156,9 @@ async def signin_with_email_and_password(
 
 @router.post("/auth/refresh", response_model=Token)
 async def refresh_access_token(
-    request: Request, 
+    request: Request,
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Refresh the access token using a valid refresh token from cookies.
@@ -172,13 +174,13 @@ async def refresh_access_token(
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         logger.warning("No refresh_token in cookie")
-        raise InvalidRefreshTokenError() 
+        raise InvalidRefreshTokenError()
 
     hash_refresh_token = auth_service.hash_token(refresh_token)
     token_data = await auth_service.get_refresh_token(hash_refresh_token)
     if not token_data:
         logger.warning("Token data not found")
-        raise InvalidRefreshTokenError() 
+        raise InvalidRefreshTokenError()
 
     device, ip, browser, user_agent = _extract_request_info(request)
     if (
@@ -186,9 +188,7 @@ async def refresh_access_token(
         or token_data["ip"] != ip
         or token_data["browser"] != browser
     ):
-        logger.warning(
-            f"Device/IP/Browser mismatch user_id={token_data.get('userId')}"
-        )
+        logger.warning(f"Device/IP/Browser mismatch user_id={token_data.get('userId')}")
         await auth_service.delete_refresh_token(hash_refresh_token)
         raise SuspiciousActivityError()
 
@@ -209,9 +209,9 @@ async def refresh_access_token(
     )
     access_token = auth_service.create_access_token(data={"sub": token_data["userId"]})
     _set_access_token_cookie(response, access_token)
-    
+
     _set_csrf_cookie(response)
-    
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -231,10 +231,10 @@ async def signin_with_google():
 
 @router.get("/auth/google/callback")
 async def google_auth_callback(
-    request: Request, 
+    request: Request,
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
 ):
     """
     Google OAuth2 callback endpoint. Handles user info from Google and issues access token.
@@ -256,12 +256,12 @@ async def google_auth_callback(
             user_provider = ProviderUserCreate(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
-        
+
         device, ip, browser, user_agent = _extract_request_info(request)
         refresh_token = await auth_service.register_refresh_token_activity(
             user.email, device, ip, browser, user_agent
         )
-        
+
         _set_auth_cookies(response, refresh_token)
         _set_access_token_cookie(response, access_token)
         redirect_url = (
@@ -284,10 +284,10 @@ async def signin_with_github():
 
 @router.get("/auth/github/callback")
 async def github_auth_callback(
-    request: Request, 
+    request: Request,
     response: Response,
     auth_service: AuthService = Depends(get_auth_service),
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
 ):
     """
     GitHub OAuth2 callback endpoint. Handles user info from GitHub and issues access token.
@@ -309,12 +309,12 @@ async def github_auth_callback(
             user_provider = ProviderUserCreate(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
-        
+
         device, ip, browser, user_agent = _extract_request_info(request)
         refresh_token = await auth_service.register_refresh_token_activity(
             user.email, device, ip, browser, user_agent
         )
-        
+
         _set_auth_cookies(response, refresh_token)
         _set_access_token_cookie(response, access_token)
         redirect_url = (
@@ -325,9 +325,9 @@ async def github_auth_callback(
 
 @router.post("/auth/logout", response_model=LogoutResponse)
 async def logout(
-    request: Request, 
+    request: Request,
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Log out the current user by deleting the refresh token cookie and invalidating the token in the database.
@@ -360,9 +360,9 @@ async def logout(
 @router.post("/auth/send-verification", response_model=EmailVerificationResponse)
 @limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def send_email_verification(
-    request: Request, 
-    request_data: EmailVerificationRequest, 
-    auth_service: AuthService = Depends(get_auth_service)
+    request: Request,
+    request_data: EmailVerificationRequest,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Send a verification email to the user for email verification.
@@ -376,7 +376,6 @@ async def send_email_verification(
     """
     result = await auth_service.resend_verification_email(request_data.email)
     if result:
-
         return EmailVerificationResponse(message=Info.EMAIL_VERIFICATION_SENT)
     else:
         # Don't reveal if user doesn't exist or is already verified
@@ -386,7 +385,7 @@ async def send_email_verification(
 @router.post("/auth/verify-email", response_model=VerifyEmailResponse)
 async def verify_email_endpoint(
     request_data: VerifyEmailRequest,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Verify user's email using the provided token.
@@ -397,7 +396,7 @@ async def verify_email_endpoint(
     Returns:
         VerifyEmailResponse: Message indicating verification result.
     """
-    
+
     success = await auth_service.verify_email(request_data.token)
     if success:
         return VerifyEmailResponse(message=ErrorCode.EMAIL_VERIFIED_SUCCESS)
@@ -409,9 +408,9 @@ async def verify_email_endpoint(
 @router.post("/auth/forgot-password", response_model=PasswordResetResponse)
 @limiter.limit(f"{config.auth_requests_per_minute}/minute")
 async def forgot_password(
-    request: Request, 
-    request_data: PasswordResetRequest, 
-    auth_service: AuthService = Depends(get_auth_service)
+    request: Request,
+    request_data: PasswordResetRequest,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Send a password reset email to the user.
@@ -423,16 +422,15 @@ async def forgot_password(
     Returns:
         PasswordResetResponse: Message indicating reset email sent.
     """
-    result = await auth_service.create_password_reset_token(request_data.email)
+    await auth_service.create_password_reset_token(request_data.email)
 
-        
     return PasswordResetResponse(message=ErrorCode.PASSWORD_RESET_SENT)
 
 
 @router.post("/auth/reset-password", response_model=PasswordResetConfirmResponse)
 async def reset_password_endpoint(
     request_data: PasswordResetConfirmRequest,
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     """
     Reset the user's password using the provided token and new password.
@@ -443,7 +441,7 @@ async def reset_password_endpoint(
     Returns:
         PasswordResetConfirmResponse: Message indicating password reset result.
     """
-    
+
     if request_data.new_password != request_data.confirm_password:
         raise PasswordsDoNotMatchError()
 

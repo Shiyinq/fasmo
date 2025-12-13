@@ -1,24 +1,26 @@
 import secrets
-from src.interfaces import BackgroundTaskRunner
-from src.config import config
-from src.logging_config import create_logger
+
+from src.api_keys.constants import Info
 from src.api_keys.exceptions import (
     APIKeyCreationError,
     APIKeyDeletionError,
     APIKeyNotFoundError,
-    InvalidAPIKeyError
+    InvalidAPIKeyError,
 )
-from src.api_keys.schemas import APIKeysResponse, CreateAPIKey
-from src.api_keys.constants import Info
-from src.utils import hash_token
 from src.api_keys.repository import ApiKeyRepository
-
+from src.api_keys.schemas import APIKeysResponse, CreateAPIKey
+from src.config import config
+from src.interfaces import BackgroundTaskRunner
+from src.logging_config import create_logger
+from src.utils import hash_token
 
 logger = create_logger("api_keys_service", __name__)
 
 
 class ApiKeyService:
-    def __init__(self, repository: ApiKeyRepository, background_tasks: BackgroundTaskRunner):
+    def __init__(
+        self, repository: ApiKeyRepository, background_tasks: BackgroundTaskRunner
+    ):
         self.repository = repository
         self.background_tasks = background_tasks
 
@@ -31,7 +33,9 @@ class ApiKeyService:
             await self.check_and_delete_api_key(user_id)
             await self.repository.insert_api_key(data)
 
-            return APIKeysResponse(apiKey=api_key, detail=Info.API_KEY_CREATED + " " + Info.API_KEY_WARNING)
+            return APIKeysResponse(
+                apiKey=api_key, detail=Info.API_KEY_CREATED + " " + Info.API_KEY_WARNING
+            )
         except Exception as e:
             logger.exception(f"Error creating API key for user {user_id}: {str(e)}")
             raise APIKeyCreationError()
@@ -41,7 +45,7 @@ class ApiKeyService:
         if current_api_key:
             deleted = await self.repository.delete_user_api_key(user_id)
             return deleted.deleted_count == 1
-        
+
         return False
 
     async def delete_api_key(self, user_id: str) -> APIKeysResponse:
@@ -67,9 +71,10 @@ class ApiKeyService:
             user = await self.repository.find_user_by_hash_key(hash_key)
             if not user:
                 raise InvalidAPIKeyError()
-            
 
-            self.background_tasks.add_task(self.update_last_used_api_key, user['userId'])
+            self.background_tasks.add_task(
+                self.update_last_used_api_key, user["userId"]
+            )
 
             return user
         except InvalidAPIKeyError:

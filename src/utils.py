@@ -64,5 +64,6 @@ def pagination_aggregate(page: int, limit: int) -> Dict[str, Any]:
         "data": [{"$skip": skip}, {"$limit": limit}],
     }
 
+
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()

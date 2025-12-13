@@ -11,18 +11,18 @@ from slowapi.util import get_remote_address
 from src.api import router as api_router
 from src.config import config
 from src.database import database_instance
-from src.logging_config import request_id_ctx_var
-
-
+from src.exception_handlers import (
+    detailed_http_exception_handler,
+    domain_exception_handler,
+)
 from src.exceptions import DomainException
-from src.exception_handlers import detailed_http_exception_handler, domain_exception_handler
 from src.http_exceptions import DetailedHTTPException, EntityTooLarge
+from src.logging_config import request_id_ctx_var
 from src.utils_db import create_indexes
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     await database_instance.connect()
 
     await create_indexes()
@@ -31,19 +31,20 @@ async def lifespan(app: FastAPI):
     await database_instance.close()
 
 
-
 limiter = Limiter(
-    key_func=get_remote_address, 
-    default_limits=[f"{config.default_requests_per_minute}/minute"]
+    key_func=get_remote_address,
+    default_limits=[f"{config.default_requests_per_minute}/minute"],
 )
 
 app = FastAPI(
     title="Fasmo API",
-    openapi_url="/api/openapi.json" if config.is_env_dev else None,  # Disable docs schema in prod
-    docs_url="/docs" if config.is_env_dev else None,                # Disable Swagger UI in prod
-    redoc_url="/redoc" if config.is_env_dev else None,              # Disable ReDoc in prod
-    debug=config.is_env_dev,                                        # Enable debug only in dev
-    lifespan=lifespan
+    openapi_url="/api/openapi.json"
+    if config.is_env_dev
+    else None,  # Disable docs schema in prod
+    docs_url="/docs" if config.is_env_dev else None,  # Disable Swagger UI in prod
+    redoc_url="/redoc" if config.is_env_dev else None,  # Disable ReDoc in prod
+    debug=config.is_env_dev,  # Enable debug only in dev
+    lifespan=lifespan,
 )
 
 
@@ -58,8 +59,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.middleware("http")
 async def limit_upload_size(request: Request, call_next):
-
-    max_upload_size = config.max_upload_size_bytes 
+    max_upload_size = config.max_upload_size_bytes
     content_length = request.headers.get("content-length")
     if content_length:
         if int(content_length) > max_upload_size:
@@ -83,8 +83,10 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
+    response.headers[
+        "Strict-Transport-Security"
+    ] = "max-age=31536000; includeSubDomains"
+
     if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
@@ -96,8 +98,10 @@ async def add_security_headers(request: Request, call_next):
             "connect-src 'self'"
         )
     else:
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'"
-    
+        response.headers[
+            "Content-Security-Policy"
+        ] = "default-src 'self'; script-src 'self'"
+
     return response
 
 

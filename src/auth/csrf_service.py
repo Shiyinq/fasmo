@@ -1,5 +1,6 @@
 import secrets
 
+
 class CSRFService:
     CSRF_TOKEN_COOKIE = "csrf_token"
     CSRF_TOKEN_HEADER = "X-CSRF-Token"

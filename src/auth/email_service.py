@@ -1,8 +1,9 @@
-import resend
 import asyncio
 
-from src.interfaces import BackgroundTaskRunner
+import resend
+
 from src.config import config
+from src.interfaces import BackgroundTaskRunner
 from src.logging_config import create_logger
 
 logger = create_logger("email", __name__)
@@ -54,12 +55,11 @@ class EmailService:
             "subject": "Verify Your Email - Fasmo",
             "html": html_content,
         }
-        
+
         if self.background_tasks:
             self.background_tasks.add_task(self._send_email, payload)
         else:
             await self._send_email(payload)
-
 
     async def send_password_reset(self, email: str, token: str, username: str):
         """Send password reset email"""
@@ -91,12 +91,11 @@ class EmailService:
             "subject": "Reset Your Password - Fasmo",
             "html": html_content,
         }
-        
+
         if self.background_tasks:
             self.background_tasks.add_task(self._send_email, payload)
         else:
             await self._send_email(payload)
-
 
     async def send_account_locked_notification(
         self, email: str, username: str, lockout_duration: int
@@ -121,9 +120,8 @@ class EmailService:
             "subject": "Account Locked - Fasmo",
             "html": html_content,
         }
-        
+
         if self.background_tasks:
             self.background_tasks.add_task(self._send_email, payload)
         else:
             await self._send_email(payload)
-

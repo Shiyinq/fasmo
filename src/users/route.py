@@ -1,14 +1,11 @@
-from fastapi import APIRouter, Depends 
+from fastapi import APIRouter, Depends
 
 from src import dependencies
 from src.auth.schemas import UserCurrent
-from src.auth.email_service import EmailService
-from src.logging_config import create_logger
-from src.users.schemas import UserCreate, UserCreateResponse, UserCreatedWithEmail, UserCreated
-from src.users.service import UserService
-from src.users.service import UserService
-
 from src.dependencies import get_user_service
+from src.logging_config import create_logger
+from src.users.schemas import UserCreate, UserCreatedWithEmail, UserCreateResponse
+from src.users.service import UserService
 
 router = APIRouter()
 
@@ -17,20 +14,21 @@ logger = create_logger("users", __name__)
 
 @router.post("/users/signup", status_code=201, response_model=UserCreateResponse)
 async def signup(
-    user: UserCreate, 
-    user_service: UserService = Depends(get_user_service)
+    user: UserCreate, user_service: UserService = Depends(get_user_service)
 ):
     """
     Register a new user account.
     """
 
     result = await user_service.create_user(user)
-    
+
     if isinstance(result, UserCreatedWithEmail):
-        logger.info(f"User created successfully and verification email sent: user_id={user.userId}")
+        logger.info(
+            f"User created successfully and verification email sent: user_id={user.userId}"
+        )
     else:
         logger.info(f"User created successfully: user_id={user.userId}")
-        
+
     return result
 
 
@@ -43,5 +41,4 @@ async def user_profile(current_user=Depends(dependencies.get_current_user)):
         UserCurrent: The current user's profile data.
     """
 
-    
     return current_user

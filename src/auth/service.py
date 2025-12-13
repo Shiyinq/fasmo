@@ -3,43 +3,48 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
 
+from jose import jwt
 
-
-
-from src.auth.repository import AuthRepository
-from src.users.repository import UserRepository
-from src.auth.constants import REFRESH_TOKEN_COOKIE_KEY, REFRESH_TOKEN_MAX_AGE
 from src.auth.email_service import EmailService
 from src.auth.exceptions import IncorrectCredentialsError
-from src.logging_config import create_logger
+from src.auth.repository import AuthRepository
 from src.auth.schemas import UserLogin
 from src.auth.security_service import SecurityService
-from src.auth.csrf_service import CSRFService
 from src.config import config
+from src.logging_config import create_logger
 from src.users.exceptions import AccountLocked, EmailNotVerified
+from src.users.repository import UserRepository
 from src.utils import hash_token
-
-from src.utils import hash_token
-
-
-from jose import jwt
 
 logger = create_logger("auth_service", __name__)
 
+
 class AuthService:
-    def __init__(self, auth_repo: AuthRepository, user_repo: UserRepository, security_service: SecurityService, email_service: EmailService):
+    def __init__(
+        self,
+        auth_repo: AuthRepository,
+        user_repo: UserRepository,
+        security_service: SecurityService,
+        email_service: EmailService,
+    ):
         self.auth_repo = auth_repo
         self.user_repo = user_repo
         self.security_service = security_service
         self.email_service = email_service
 
     async def verify_password(self, plain_password, hashed_password) -> str:
-        return await asyncio.to_thread(self.security_service.verify_password, plain_password, hashed_password)
+        return await asyncio.to_thread(
+            self.security_service.verify_password, plain_password, hashed_password
+        )
 
     async def get_password_hash(self, password) -> str:
-        return await asyncio.to_thread(self.security_service.get_password_hash, password)
+        return await asyncio.to_thread(
+            self.security_service.get_password_hash, password
+        )
 
-    def create_access_token(self, data: dict, expires_delta: timedelta | None = None) -> str:
+    def create_access_token(
+        self, data: dict, expires_delta: timedelta | None = None
+    ) -> str:
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
@@ -48,11 +53,12 @@ class AuthService:
                 minutes=config.access_token_expire_minutes
             )
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, config.secret_key, algorithm=config.algorithm)
+        encoded_jwt = jwt.encode(
+            to_encode, config.secret_key, algorithm=config.algorithm
+        )
         return encoded_jwt
 
     async def get_user(self, username_or_email: str) -> Optional[UserLogin]:
-
         username_or_email = username_or_email.lower()
         query = {
             "$or": [
@@ -70,7 +76,7 @@ class AuthService:
         self, username_or_email: str, password: str = None, provider: str = None
     ) -> Union[UserLogin, bool]:
         user = await self.get_user(username_or_email)
-        
+
         # Mitigate timing attacks by always performing verification
         is_valid_password = False
         if user:
@@ -90,7 +96,6 @@ class AuthService:
         if lock_status["is_locked"]:
             raise AccountLocked()
 
-
         if provider is None and not user.isEmailVerified:
             raise EmailNotVerified()
 
@@ -100,7 +105,6 @@ class AuthService:
                 user.userId, user.email, user.username
             )
             raise IncorrectCredentialsError()
-
 
         await self.security_service.reset_failed_login_attempts(user.userId)
         return user
@@ -116,7 +120,7 @@ class AuthService:
 
     def create_refresh_token(self) -> str:
         return secrets.token_urlsafe(64)
-    
+
     def hash_token(self, token: str) -> str:
         return hash_token(token)
 
@@ -164,9 +168,9 @@ class AuthService:
     async def get_last_login_history(self, user_id: str) -> Optional[dict]:
         return await self.auth_repo.find_last_login_history(user_id)
 
-
-
-    async def register_refresh_token_activity(self, user_id: str, device: str, ip: str, browser: str, user_agent: str) -> str:
+    async def register_refresh_token_activity(
+        self, user_id: str, device: str, ip: str, browser: str, user_agent: str
+    ) -> str:
         refresh_token = self.create_refresh_token()
         hash_refresh_token = hash_token(refresh_token)
         await self.save_refresh_token(user_id, hash_refresh_token, device, ip, browser)
@@ -175,13 +179,15 @@ class AuthService:
         )
         return refresh_token
 
-
     async def create_email_verification_token(self, user_id: str) -> str:
         """Create and save email verification token"""
         token = self.security_service.create_token()
         token_hash = hash_token(token)
         await self.security_service.save_token(
-            user_id, token_hash, "email_verification", config.email_verification_expire_hours
+            user_id,
+            token_hash,
+            "email_verification",
+            config.email_verification_expire_hours,
         )
         return token
 
@@ -191,10 +197,11 @@ class AuthService:
         user_id = await self.security_service.verify_email_token(token_hash)
         return user_id is not None
 
-
-    async def create_password_reset_token(self, email: str) -> Optional[tuple[str, str, str]]:
+    async def create_password_reset_token(
+        self, email: str
+    ) -> Optional[tuple[str, str, str]]:
         """
-        Create and save password reset token. 
+        Create and save password reset token.
         Returns (token, username, email) if user exists, else None.
         """
         user = await self.get_user(email)
@@ -204,18 +211,22 @@ class AuthService:
         token = self.security_service.create_token()
         token_hash = hash_token(token)
         await self.security_service.save_token(
-            user.userId, token_hash, "password_reset", config.password_reset_expire_hours
+            user.userId,
+            token_hash,
+            "password_reset",
+            config.password_reset_expire_hours,
         )
-        
 
         await self.email_service.send_password_reset(user.email, token, user.username)
-        
+
         return token, user.username, user.email
 
     async def reset_password(self, token: str, new_password: str) -> bool:
         """Reset password with token"""
         token_hash = hash_token(token)
-        token_data = await self.security_service.verify_token(token_hash, "password_reset")
+        token_data = await self.security_service.verify_token(
+            token_hash, "password_reset"
+        )
         if not token_data:
             return False
 
@@ -226,9 +237,7 @@ class AuthService:
             {"userId": token_data["userId"]}, {"$set": {"password": hashed_password}}
         )
 
-
         await self.security_service.delete_token(token_hash, "password_reset")
-
 
         user = await self.user_repo.find_one({"userId": token_data["userId"]})
         if user:
@@ -237,7 +246,9 @@ class AuthService:
 
         return True
 
-    async def resend_verification_email(self, email: str) -> Optional[tuple[str, str, str]]:
+    async def resend_verification_email(
+        self, email: str
+    ) -> Optional[tuple[str, str, str]]:
         """
         Resend verification email.
         Returns (token, username, email) if eligible, else None.
@@ -250,8 +261,9 @@ class AuthService:
             return None  # Already verified
 
         token = await self.create_email_verification_token(user.userId)
-        
 
-        await self.email_service.send_email_verification(user.email, token, user.username)
-        
+        await self.email_service.send_email_verification(
+            user.email, token, user.username
+        )
+
         return token, user.username, user.email
