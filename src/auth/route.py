@@ -45,7 +45,7 @@ from src.dependencies import (
     get_user_service,
 )
 from src.logging_config import create_logger
-from src.users.schemas import ProviderUserCreate
+from src.users.schemas import ProviderUserCreateRequest
 from src.users.service import UserService
 
 
@@ -247,7 +247,7 @@ async def google_auth_callback(
         )
         if not check_user:
             user_provider = auth_service.extract_user_provider(user)
-            user_provider = ProviderUserCreate(**user_provider)
+            user_provider = ProviderUserCreateRequest(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
 
@@ -302,7 +302,7 @@ async def github_auth_callback(
         )
         if not check_user:
             user_provider = auth_service.extract_user_provider(user)
-            user_provider = ProviderUserCreate(**user_provider)
+            user_provider = ProviderUserCreateRequest(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
 

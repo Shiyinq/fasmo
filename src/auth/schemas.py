@@ -16,7 +16,7 @@ class UserLoginBase(BaseModel):
 
 
 class UserLogin(UserLoginBase):
-    password: str = None
+    password: Optional[str] = None
     isEmailVerified: bool = False
     failedLoginAttempts: int = 0
     isAccountLocked: bool = False

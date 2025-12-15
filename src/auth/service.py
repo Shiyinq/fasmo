@@ -94,29 +94,33 @@ class AuthService:
     ) -> Union[UserLogin, bool]:
         user = await self.get_user(username_or_email)
 
-        # Mitigate timing attacks by always performing verification
+        # For provider-based auth, skip password verification
+        if provider is not None:
+            if not user:
+                return False
+            return user
+
+        # Mitigate timing attacks by always performing verification for password-based auth
         is_valid_password = False
-        if user:
+        if user and user.password:
             is_valid_password = await self.verify_password(password, user.password)
         else:
-            # Fake verification
+            # Fake verification to prevent timing attacks
             fake_hash = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
             await self.verify_password(password or "dummy", fake_hash)
 
-        if not user and provider is None:
+        if not user:
             raise IncorrectCredentialsError()
-        elif not user and provider:
-            return False
 
         # Check account lock status
         lock_status = await self.security_service.check_account_lock_status(user.userId)
         if lock_status["is_locked"]:
             raise AccountLocked()
 
-        if provider is None and not user.isEmailVerified:
+        if not user.isEmailVerified:
             raise EmailNotVerified()
 
-        if password and not is_valid_password:
+        if not is_valid_password:
             # Handle failed login
             await self.security_service.handle_failed_login(
                 user.userId, user.email, user.username
