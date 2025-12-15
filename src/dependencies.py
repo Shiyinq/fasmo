@@ -7,7 +7,7 @@ from src.api_keys.repository import ApiKeyRepository
 from src.api_keys.service import ApiKeyService
 from src.auth.csrf_service import CSRFService
 from src.auth.email_service import EmailService
-from src.auth.http_exceptions import InvalidJWTToken
+from src.auth.http_exceptions import InvalidCSRFToken, InvalidJWTToken
 from src.auth.repository import AuthRepository
 from src.auth.schemas import UserCurrent
 from src.auth.security_service import SecurityService
