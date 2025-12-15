@@ -147,7 +147,7 @@ def get_google_sso(config: Settings = Depends(get_settings)) -> GoogleSSO:
         client_id=config.google_client_id,
         client_secret=config.google_client_secret,
         redirect_uri=config.google_redirect_uri,
-        allow_insecure_http=True,
+        allow_insecure_http=config.is_env_dev,
     )
 
 
@@ -156,5 +156,5 @@ def get_github_sso(config: Settings = Depends(get_settings)) -> GithubSSO:
         client_id=config.github_client_id,
         client_secret=config.github_client_secret,
         redirect_uri=config.github_redirect_uri,
-        allow_insecure_http=True,
+        allow_insecure_http=config.is_env_dev,
     )
