@@ -1,18 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { accessToken } from '$lib/store/auth';
+	import { auth } from '$lib/apis/auth';
 
-	onMount(() => {
-		// Extract access_token from URL and save to store
-		// This avoids an immediate token refresh call on the home page
-		const token = $page.url.searchParams.get('access_token');
-		if (token) {
-			accessToken.set(token);
+	onMount(async () => {
+		try {
+			// Get access token from HTTP-only cookie via refresh endpoint
+			// The token was already set in cookie by the OAuth callback
+			const data = await auth.refresh();
+			accessToken.set(data.access_token);
+		} catch (error) {
+			console.error('Failed to refresh token:', error);
 		}
 
-		// Redirect to home, replacing history to hide the token URL
+		// Redirect to home
 		goto('/', { replaceState: true });
 	});
 </script>
