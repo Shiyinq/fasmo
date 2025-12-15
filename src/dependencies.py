@@ -107,7 +107,7 @@ async def get_current_user(
     token_data = auth_service.verify_access_token(token)
     user = await auth_service.get_user(username_or_email=token_data.username)
     if user is None:
-        logger.warning(f"User not found: {token_data.username}")
+        logger.warning("User not found for provided token")
         raise InvalidJWTToken()
     return UserCurrent(**user.dict())
 
