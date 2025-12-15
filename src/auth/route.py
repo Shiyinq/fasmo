@@ -258,10 +258,8 @@ async def google_auth_callback(
 
         _set_auth_cookies(response, refresh_token, config)
         _set_access_token_cookie(response, access_token, config)
-        redirect_url = (
-            f"{config.frontend_url}/auth/callback?access_token={access_token}"
-        )
-        return RedirectResponse(url=redirect_url)
+        redirect_url = f"{config.frontend_url}/auth/callback"
+        return RedirectResponse(url=redirect_url, headers=response.headers)
 
 
 @router.get("/auth/github/signin")
@@ -313,10 +311,8 @@ async def github_auth_callback(
 
         _set_auth_cookies(response, refresh_token, config)
         _set_access_token_cookie(response, access_token, config)
-        redirect_url = (
-            f"{config.frontend_url}/auth/callback?access_token={access_token}"
-        )
-        return RedirectResponse(url=redirect_url)
+        redirect_url = f"{config.frontend_url}/auth/callback"
+        return RedirectResponse(url=redirect_url, headers=response.headers)
 
 
 @router.post("/auth/logout", response_model=LogoutResponse)
