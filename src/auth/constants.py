@@ -22,6 +22,8 @@ class ErrorCode:
     PASSWORD_POLICY_VIOLATION = "Password must be at least 8 characters with uppercase, lowercase, digits, and symbols."
     PASSWORD_RESET_SUCCESS = "Password reset successfully!"
     PASSWORD_RESET_TOKEN_INVALID = "Password reset token is invalid or has expired."
+    ACCOUNT_LOCKED = "Account is locked."
+    EMAIL_NOT_VERIFIED = "Email is not verified."
 
 
 class DomainErrorCode:
@@ -39,6 +41,7 @@ class DomainErrorCode:
     PASSWORD_POLICY_VIOLATION = "Password policy violation"
     USER_NOT_FOUND = "User not found"
     TOKEN_VALIDATION_FAILED = "Token validation failed"
+    INVALID_JWT_TOKEN = "Invalid JWT token"
 
 
 class Info:

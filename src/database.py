@@ -1,4 +1,5 @@
 import motor.motor_asyncio
+
 from src.config import config
 
 
@@ -14,7 +15,7 @@ class Database:
         from src.logging_config import create_logger
 
         self.logger = create_logger("database", __name__)
-        
+
         try:
             self.client = motor.motor_asyncio.AsyncIOMotorClient(
                 config.mongo_uri, maxPoolSize=config.db_max_pool_size
@@ -34,5 +35,4 @@ class Database:
             self.logger.info("Database connection closed.")
 
 
-# Create a global instance, but don't connect yet
 database_instance = Database()

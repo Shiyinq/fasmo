@@ -1,12 +1,11 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from password_validator import PasswordValidator
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
-from src.auth.service import get_password_hash
 from src.users.constants import Info
 from src.users.http_exceptions import PasswordNotMatch, PasswordRules
+from src.utils import validate_password_strength
 
 
 class UserBase(BaseModel):
@@ -45,12 +44,7 @@ class PasswordBase(UserBase):
         if self.password != self.confirmPassword:
             raise PasswordNotMatch
 
-        # Stronger password policy
-        password_rules = PasswordValidator()
-        password_rules.min(8).max(
-            128
-        ).has().uppercase().has().lowercase().has().digits().has().symbols().no().spaces()
-        if not password_rules.validate(self.password):
+        if not validate_password_strength(self.password):
             raise PasswordRules
 
         return self
@@ -72,9 +66,9 @@ class UserCreateResponse(BaseModel):
     detail: str
 
 
-class UserCreatedWithEmail(BaseModel):
+class UserCreatedWithEmail(UserCreateResponse):
     detail: str = Info.USER_CREATED_WITH_EMAIL
 
 
-class UserCreated(BaseModel):
+class UserCreated(UserCreateResponse):
     detail: str = Info.USER_CREATED
