@@ -31,7 +31,7 @@ class EmailNotVerified(BadRequest):
 
 
 class InvalidCSRFToken(PermissionDenied):
-    DETAIL = "Invalid CSRF token"
+    DETAIL = ErrorCode.INVALID_CSRF_TOKEN
 
 
 class EmailNotFoundOrVerified(NotFound):
@@ -54,5 +54,3 @@ class PasswordPolicyViolation(BadRequest):
     DETAIL = ErrorCode.PASSWORD_POLICY_VIOLATION
 
 
-class InvalidJWTToken(BadRequest):
-    DETAIL = ErrorCode.INVALID_JWT_TOKEN

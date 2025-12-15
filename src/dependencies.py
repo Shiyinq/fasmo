@@ -109,7 +109,7 @@ async def get_current_user(
     if user is None:
         logger.warning("User not found for provided token")
         raise InvalidJWTToken()
-    return UserCurrent(**user.dict())
+    return UserCurrent(**user.model_dump())
 
 
 def require_csrf_protection(request: Request, config: Settings = Depends(get_settings)):

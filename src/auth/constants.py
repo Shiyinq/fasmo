@@ -8,6 +8,7 @@ class ErrorCode:
     INVALID_JWT_TOKEN = "Invalid JWT token."
     REFRESH_TOKEN_EXPIRED = "Refresh token expired, please login again."
     SUSPICIOUS_ACTIVITY = "Suspicious activity detected, please login again."
+    INVALID_CSRF_TOKEN = "Invalid CSRF token."
 
     # Email verification errors
     EMAIL_NOT_FOUND_OR_VERIFIED = "Email not found or already verified."
