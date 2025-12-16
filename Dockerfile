@@ -23,11 +23,10 @@ RUN pip install --no-cache-dir -r /app/requirements/prod.txt
 # Copy the src directory contents into the container at /app/src
 COPY src /app/src
 
-# Copy .env file into the container
-COPY .env /app/.env
+# Copy scripts directory
+COPY scripts /app/scripts
 
-# Copy the production start script and make it executable
-COPY scripts/start-prod.sh /app/scripts/start-prod.sh
+# Make it executable
 RUN chmod +x /app/scripts/start-prod.sh
 
 # Create log directory and set permissions so the app can write logs
