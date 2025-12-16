@@ -14,6 +14,7 @@ from src.auth.security_service import SecurityService
 from src.auth.service import AuthService
 from src.config import Settings, config
 from src.database import database_instance
+from src.health.service import HealthService
 from src.logging_config import create_logger
 from src.users.repository import UserRepository
 from src.users.service import UserService
@@ -158,3 +159,8 @@ def get_github_sso(config: Settings = Depends(get_settings)) -> GithubSSO:
         redirect_uri=config.github_redirect_uri,
         allow_insecure_http=config.is_env_dev,
     )
+
+
+
+def get_health_service() -> HealthService:
+    return HealthService(database_instance)
