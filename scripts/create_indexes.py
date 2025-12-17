@@ -38,17 +38,31 @@ async def create_indexes():
         print("Database indexes created successfully")
     except Exception as e:
         print(f"Failed to create indexes: {str(e)}")
-        # Re-raise logic error so script exits with error code
         raise e
 
 async def main():
     print("Initializing database connection...")
-    await database_instance.connect()
+    
+    max_retries = 30
+    retry_interval = 2
+    
+    for i in range(max_retries):
+        try:
+            await database_instance.connect()
+            await database_instance.database.command("ping")
+            print("Successfully connected to MongoDB!")
+            break
+        except Exception as e:
+            print(f"Waiting for database... (Attempt {i+1}/{max_retries}) Error: {e}")
+            if i < max_retries - 1:
+                await asyncio.sleep(retry_interval)
+            else:
+                print("Could not connect to database after multiple attempts.")
+                sys.exit(1)
 
     try:
         print("Creating database indexes...")
         await create_indexes()
-        # No need to print success here, function does it
     except Exception as e:
         print(f"Error process: {e}")
         # Exit with error code 1 to signal failure to CI/CD
