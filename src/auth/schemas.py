@@ -42,8 +42,8 @@ class RefreshTokenData(BaseModel):
     device: str
     ip: str
     browser: str
-    createdAt: Optional[str] = None
-    lastUsedAt: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    lastUsedAt: Optional[datetime] = None
 
 
 class LoginHistory(BaseModel):
@@ -51,7 +51,7 @@ class LoginHistory(BaseModel):
     device: str
     ip: str
     browser: str
-    loginAt: str
+    loginAt: datetime
     userAgentRaw: Optional[str] = None
 
 

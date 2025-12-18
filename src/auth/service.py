@@ -154,8 +154,8 @@ class AuthService:
             "device": device,
             "ip": ip,
             "browser": browser,
-            "createdAt": datetime.now(timezone.utc).isoformat(),
-            "lastUsedAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(timezone.utc),
+            "lastUsedAt": datetime.now(timezone.utc),
         }
         await self.auth_repo.insert_refresh_token(data)
 
@@ -181,7 +181,7 @@ class AuthService:
             "device": device,
             "ip": ip,
             "browser": browser,
-            "loginAt": datetime.now(timezone.utc).isoformat(),
+            "loginAt": datetime.now(timezone.utc),
             "userAgentRaw": user_agent_raw,
         }
         await self.auth_repo.insert_login_history(data)
