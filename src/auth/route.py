@@ -184,7 +184,10 @@ async def refresh_access_token(
         await auth_service.delete_refresh_token(hash_refresh_token)
         raise SuspiciousActivityError()
 
-    created_at = datetime.fromisoformat(token_data["createdAt"])
+    created_at = token_data["createdAt"]
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+
     if (
         datetime.now(timezone.utc) - created_at
     ).days >= config.refresh_token_max_age_days:

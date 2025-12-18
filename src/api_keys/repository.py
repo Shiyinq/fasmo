@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -21,7 +21,7 @@ class ApiKeyRepository:
 
     async def update_last_used_api_key(self, user_id: str):
         return await self.collection.update_one(
-            {"userId": user_id}, {"$set": {"lastUsedAt": datetime.now()}}
+            {"userId": user_id}, {"$set": {"lastUsedAt": datetime.now(timezone.utc)}}
         )
 
     async def find_user_by_hash_key(self, hash_key: str) -> Optional[Dict]:
