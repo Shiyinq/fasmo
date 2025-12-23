@@ -78,7 +78,6 @@ class UserInDB(BaseModel):
     accountLockedUntil: Optional[datetime] = Field(default=None)
 
 
-
 class UserCreateResponse(BaseModel):
     detail: str
 

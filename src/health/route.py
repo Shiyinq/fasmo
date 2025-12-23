@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Response, status
 
-from src.database import database_instance
 from src.dependencies import get_health_service
 from src.health.constants import HealthStatus
 from src.health.schemas import HealthCheckResponse
