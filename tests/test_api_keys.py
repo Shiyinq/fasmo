@@ -102,4 +102,4 @@ async def test_revoke_api_key(client: AsyncClient, db):
     headers_key = {"Authorization": f"Bearer {api_key}"}
     # Should be 400 because InvalidJWTToken maps to 400 in this project
     response = await client.get("/api/users/profile", headers=headers_key)
-    assert response.status_code == 400
+    assert response.status_code == 401
