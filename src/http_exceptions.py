@@ -50,7 +50,7 @@ class Conflict(DetailedHTTPException):
 
 class TooManyRequests(DetailedHTTPException):
     STATUS_CODE = status.HTTP_429_TOO_MANY_REQUESTS
-    DETAIL = "Too manyrRequests"
+    DETAIL = "Too many requests"
 
 
 class EntityTooLarge(DetailedHTTPException):

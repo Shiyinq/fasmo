@@ -7,13 +7,14 @@ from src.api_keys.repository import ApiKeyRepository
 from src.api_keys.service import ApiKeyService
 from src.auth.csrf_service import CSRFService
 from src.auth.email_service import EmailService
-from src.auth.http_exceptions import InvalidJWTToken
+from src.auth.http_exceptions import InvalidCSRFToken, InvalidJWTToken
 from src.auth.repository import AuthRepository
 from src.auth.schemas import UserCurrent
 from src.auth.security_service import SecurityService
 from src.auth.service import AuthService
 from src.config import Settings, config
 from src.database import database_instance
+from src.health.service import HealthService
 from src.logging_config import create_logger
 from src.users.repository import UserRepository
 from src.users.service import UserService
@@ -107,9 +108,9 @@ async def get_current_user(
     token_data = auth_service.verify_access_token(token)
     user = await auth_service.get_user(username_or_email=token_data.username)
     if user is None:
-        logger.warning(f"User not found: {token_data.username}")
+        logger.warning("User not found for provided token")
         raise InvalidJWTToken()
-    return UserCurrent(**user.dict())
+    return UserCurrent(**user.model_dump())
 
 
 def require_csrf_protection(request: Request, config: Settings = Depends(get_settings)):
@@ -147,7 +148,7 @@ def get_google_sso(config: Settings = Depends(get_settings)) -> GoogleSSO:
         client_id=config.google_client_id,
         client_secret=config.google_client_secret,
         redirect_uri=config.google_redirect_uri,
-        allow_insecure_http=True,
+        allow_insecure_http=config.is_env_dev,
     )
 
 
@@ -156,5 +157,10 @@ def get_github_sso(config: Settings = Depends(get_settings)) -> GithubSSO:
         client_id=config.github_client_id,
         client_secret=config.github_client_secret,
         redirect_uri=config.github_redirect_uri,
-        allow_insecure_http=True,
+        allow_insecure_http=config.is_env_dev,
     )
+
+
+
+def get_health_service() -> HealthService:
+    return HealthService(database_instance)

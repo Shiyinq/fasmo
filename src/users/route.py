@@ -4,7 +4,7 @@ from src import dependencies
 from src.auth.schemas import UserCurrent
 from src.dependencies import get_user_service
 from src.logging_config import create_logger
-from src.users.schemas import UserCreate, UserCreatedWithEmail, UserCreateResponse
+from src.users.schemas import UserCreateRequest, UserCreatedWithEmail, UserCreateResponse
 from src.users.service import UserService
 
 router = APIRouter()
@@ -14,7 +14,7 @@ logger = create_logger("users", __name__)
 
 @router.post("/users/signup", status_code=201, response_model=UserCreateResponse)
 async def signup(
-    user: UserCreate, user_service: UserService = Depends(get_user_service)
+    user: UserCreateRequest, user_service: UserService = Depends(get_user_service)
 ):
     """
     Register a new user account.
@@ -23,11 +23,9 @@ async def signup(
     result = await user_service.create_user(user)
 
     if isinstance(result, UserCreatedWithEmail):
-        logger.info(
-            f"User created successfully and verification email sent: user_id={user.userId}"
-        )
+        logger.info("User created successfully and verification email sent")
     else:
-        logger.info(f"User created successfully: user_id={user.userId}")
+        logger.info("User created successfully")
 
     return result
 

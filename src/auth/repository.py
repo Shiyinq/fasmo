@@ -19,7 +19,7 @@ class AuthRepository:
     async def update_refresh_token_last_used(self, token: str):
         return await self.refresh_tokens.update_one(
             {"hashRefreshToken": token},
-            {"$set": {"lastUsedAt": datetime.now(timezone.utc).isoformat()}},
+            {"$set": {"lastUsedAt": datetime.now(timezone.utc)}},
         )
 
     async def delete_refresh_token(self, token: str):

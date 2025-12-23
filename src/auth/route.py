@@ -45,7 +45,7 @@ from src.dependencies import (
     get_user_service,
 )
 from src.logging_config import create_logger
-from src.users.schemas import ProviderUserCreate
+from src.users.schemas import ProviderUserCreateRequest
 from src.users.service import UserService
 
 
@@ -184,7 +184,10 @@ async def refresh_access_token(
         await auth_service.delete_refresh_token(hash_refresh_token)
         raise SuspiciousActivityError()
 
-    created_at = datetime.fromisoformat(token_data["createdAt"])
+    created_at = token_data["createdAt"]
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+
     if (
         datetime.now(timezone.utc) - created_at
     ).days >= config.refresh_token_max_age_days:
@@ -247,7 +250,7 @@ async def google_auth_callback(
         )
         if not check_user:
             user_provider = auth_service.extract_user_provider(user)
-            user_provider = ProviderUserCreate(**user_provider)
+            user_provider = ProviderUserCreateRequest(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
 
@@ -258,10 +261,8 @@ async def google_auth_callback(
 
         _set_auth_cookies(response, refresh_token, config)
         _set_access_token_cookie(response, access_token, config)
-        redirect_url = (
-            f"{config.frontend_url}/auth/callback?access_token={access_token}"
-        )
-        return RedirectResponse(url=redirect_url)
+        redirect_url = f"{config.frontend_url}/auth/callback"
+        return RedirectResponse(url=redirect_url, headers=response.headers)
 
 
 @router.get("/auth/github/signin")
@@ -302,7 +303,7 @@ async def github_auth_callback(
         )
         if not check_user:
             user_provider = auth_service.extract_user_provider(user)
-            user_provider = ProviderUserCreate(**user_provider)
+            user_provider = ProviderUserCreateRequest(**user_provider)
             await user_service.create_user_provider(user_provider)
         access_token = auth_service.create_access_token(data={"sub": user.email})
 
@@ -313,10 +314,8 @@ async def github_auth_callback(
 
         _set_auth_cookies(response, refresh_token, config)
         _set_access_token_cookie(response, access_token, config)
-        redirect_url = (
-            f"{config.frontend_url}/auth/callback?access_token={access_token}"
-        )
-        return RedirectResponse(url=redirect_url)
+        redirect_url = f"{config.frontend_url}/auth/callback"
+        return RedirectResponse(url=redirect_url, headers=response.headers)
 
 
 @router.post("/auth/logout", response_model=LogoutResponse)

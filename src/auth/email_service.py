@@ -24,12 +24,12 @@ class EmailService:
 
     async def _send_email(self, payload: dict):
         try:
-            logger.info(f"Sending email to {payload['to']}")
+            logger.info("Sending email")
             # Run blocking I/O (network request) in thread pool
             await asyncio.to_thread(resend.Emails.send, payload)
-            logger.info(f"Email sent successfully to {payload['to']}")
+            logger.info("Email sent successfully")
         except Exception as e:
-            logger.exception(f"Error sending email to {payload['to']}: {e}")
+            logger.exception(f"Error sending email: {e}")
 
     async def send_email_verification(self, email: str, token: str, username: str):
         """Send email verification"""

@@ -21,16 +21,12 @@ from src.exception_handlers import (
     domain_exception_handler,
 )
 from src.exceptions import DomainException
-from src.http_exceptions import DetailedHTTPException, EntityTooLarge
+from src.http_exceptions import BadRequest, DetailedHTTPException, EntityTooLarge
 from src.logging_config import request_id_ctx_var
-from src.utils_db import create_indexes
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await database_instance.connect()
 
-    await create_indexes()
     yield
 
     await database_instance.close()
@@ -67,8 +63,11 @@ async def limit_upload_size(request: Request, call_next):
     max_upload_size = config.max_upload_size_bytes
     content_length = request.headers.get("content-length")
     if content_length:
-        if int(content_length) > max_upload_size:
-            raise EntityTooLarge()
+        try:
+            if int(content_length) > max_upload_size:
+                raise EntityTooLarge()
+        except ValueError:
+            raise BadRequest()
     return await call_next(request)
 
 
