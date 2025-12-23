@@ -52,5 +52,3 @@ class PasswordsNotMatch(BadRequest):
 
 class PasswordPolicyViolation(BadRequest):
     DETAIL = ErrorCode.PASSWORD_POLICY_VIOLATION
-
-

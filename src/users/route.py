@@ -4,7 +4,11 @@ from src import dependencies
 from src.auth.schemas import UserCurrent
 from src.dependencies import get_user_service
 from src.logging_config import create_logger
-from src.users.schemas import UserCreateRequest, UserCreatedWithEmail, UserCreateResponse
+from src.users.schemas import (
+    UserCreatedWithEmail,
+    UserCreateRequest,
+    UserCreateResponse,
+)
 from src.users.service import UserService
 
 router = APIRouter()
