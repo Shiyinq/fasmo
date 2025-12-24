@@ -17,6 +17,9 @@ WORKDIR /app
 # Copy the entire requirements directory
 COPY requirements /app/requirements
 
+# Upgrade pip to the latest version ensuring better connectivity handling
+RUN pip install --upgrade pip
+
 # Install production dependencies
 RUN pip install --no-cache-dir -r /app/requirements/prod.txt
 
