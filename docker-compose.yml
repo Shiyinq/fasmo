@@ -47,7 +47,7 @@ services:
 
 
   mongodb:
-    image: mongo:latest
+    image: mongo:7.0
     ports:
       - "27018:27017"
     volumes:
