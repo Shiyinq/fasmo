@@ -33,6 +33,7 @@ export const auth = {
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
+			credentials: 'include',
 			body: formData
 		});
 
