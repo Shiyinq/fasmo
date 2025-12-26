@@ -15,9 +15,9 @@ from src.users.exceptions import (
 from src.users.repository import UserRepository
 from src.users.schemas import (
     ProviderUserCreateRequest,
-    UserCreateRequest,
     UserCreated,
     UserCreatedWithEmail,
+    UserCreateRequest,
     UserInDB,
 )
 
@@ -131,4 +131,3 @@ class UserService:
         except Exception as e:
             logger.exception(f"Unexpected error in create_user_provider: {str(e)}")
             raise ProviderUserCreationError()
-

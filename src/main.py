@@ -23,6 +23,8 @@ from src.exception_handlers import (
 from src.exceptions import DomainException
 from src.http_exceptions import BadRequest, DetailedHTTPException, EntityTooLarge
 from src.logging_config import request_id_ctx_var
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await database_instance.connect()

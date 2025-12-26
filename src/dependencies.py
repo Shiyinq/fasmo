@@ -161,6 +161,5 @@ def get_github_sso(config: Settings = Depends(get_settings)) -> GithubSSO:
     )
 
 
-
 def get_health_service() -> HealthService:
     return HealthService(database_instance)
