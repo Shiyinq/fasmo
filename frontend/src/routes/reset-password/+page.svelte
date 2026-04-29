@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { authStore } from '$lib/stores';
 	import { addToast } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -52,7 +52,7 @@
 	let allValid = $derived(reqLength && reqNumber && reqSpecial && reqMatch);
 
 	onMount(() => {
-		token = $page.url.searchParams.get('token') || '';
+		token = page.url.searchParams.get('token') || '';
 		if (!token) {
 			error = 'Invalid frequency token.';
 		}

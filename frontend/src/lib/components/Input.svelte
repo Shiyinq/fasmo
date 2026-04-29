@@ -1,10 +1,27 @@
 <script lang="ts">
-	export let label = '';
-	export let type = 'text';
-	export let value = '';
-	export let placeholder = '';
-	export let error = '';
-	export let id = Math.random().toString(36).substr(2, 9);
+	interface Props {
+		label?: string;
+		type?: string;
+		value?: string;
+		placeholder?: string;
+		error?: string;
+		id?: string;
+		oninput?: (e: Event & { currentTarget: EventTarget & HTMLInputElement }) => void;
+		onblur?: (e: FocusEvent) => void;
+		[key: string]: any;
+	}
+
+	let {
+		label = '',
+		type = 'text',
+		value = $bindable(''),
+		placeholder = '',
+		error = '',
+		id = Math.random().toString(36).substring(2, 11),
+		oninput,
+		onblur,
+		...rest
+	}: Props = $props();
 </script>
 
 <div class="input-group">
@@ -16,11 +33,11 @@
 		{id}
 		{type}
 		{placeholder}
-		{value}
-		class="input-field {error ? 'has-error' : ''}"
-		on:input={(e) => (value = e.currentTarget.value)}
-		on:blur
-		{...$$restProps}
+		bind:value
+		class="input-field {error ? 'has-error' : ''} {rest.class || ''}"
+		{oninput}
+		{onblur}
+		{...rest}
 	/>
 
 	{#if error}
