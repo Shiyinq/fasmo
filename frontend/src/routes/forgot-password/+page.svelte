@@ -5,6 +5,7 @@
 	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	const { t } = useTranslation();
 
@@ -19,7 +20,7 @@
 			await authStore.forgotPassword({ email });
 			success = true;
 		} catch (e: any) {
-			console.error(e);
+			logger.error('Forgot password failed', e, { context: 'forgot-password' });
 		}
 	}
 </script>

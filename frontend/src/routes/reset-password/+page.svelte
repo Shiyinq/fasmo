@@ -7,6 +7,7 @@
 	import { useTranslation } from '$lib/i18n/useTranslation';
 	import Input from '$lib/components/Input.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	const { t } = useTranslation();
 
@@ -83,7 +84,7 @@
 				window.location.href = '/login';
 			}, 2000);
 		} catch (e: unknown) {
-			console.error(e);
+			logger.error('Reset password failed', e, { context: 'reset-password' });
 			addToast(authStore.error, 'error');
 		}
 	}

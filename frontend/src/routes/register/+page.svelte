@@ -7,6 +7,7 @@
 	import SEO from '$lib/components/common/SEO.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	const { t } = useTranslation();
 
@@ -71,7 +72,7 @@
 			await authStore.login({ username: email, password });
 			goto('/app');
 		} catch (e: unknown) {
-			console.error(e);
+			logger.error('Registration failed', e, { context: 'register' });
 		}
 	}
 

@@ -7,6 +7,7 @@
 	import { locale, type Locale } from '$lib/i18n';
 	import ToastContainer from '$lib/components/common/ToastContainer.svelte';
 	import SEO from '$lib/components/common/SEO.svelte';
+	import { logger } from '$lib/utils/logger';
 
 	interface Props {
 		data: { locale: string };
@@ -52,7 +53,7 @@
 		try {
 			await authStore.getProfile();
 		} catch (err) {
-			console.error('Failed to load profile', err);
+			logger.error('Failed to load profile', err, { context: 'layout' });
 		} finally {
 			isInitialDataLoaded.value = true;
 		}

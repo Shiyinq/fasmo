@@ -1,4 +1,5 @@
 import { addToast } from '$lib/stores/toast.svelte';
+import { logger } from '$lib/utils/logger';
 
 /**
  * Copies text to clipboard and shows a success toast.
@@ -11,7 +12,7 @@ export async function copyToClipboard(text: string, label = 'Content') {
 		addToast(`${label} copied to clipboard.`, 'success');
 		return true;
 	} catch (err) {
-		console.error('Failed to copy: ', err);
+		logger.error('Failed to copy to clipboard', err, { context: 'clipboard' });
 		addToast('Failed to copy content.', 'error');
 		return false;
 	}
