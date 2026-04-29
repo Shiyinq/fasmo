@@ -1,81 +1,70 @@
-import { get } from 'svelte/store';
-import { accessToken } from '$lib/store/auth';
+import { accessToken } from '$lib/stores/accessToken.svelte';
+import { isAuthenticated } from '$lib/stores/authStatus.svelte';
 import { isTokenExpired, getCSRFToken } from '$lib/utils/auth';
 import type { ApiError, AuthResponse } from '$lib/types';
-
-import { PUBLIC_CLIENT_SIDE_API_BASE_URL, PUBLIC_SERVER_SIDE_API_BASE_URL } from '$env/static/public';
 import { browser } from '$app/environment';
 
-export const API_BASE = browser ? PUBLIC_CLIENT_SIDE_API_BASE_URL : PUBLIC_SERVER_SIDE_API_BASE_URL;
+import { API_BASE, PUBLIC_ENDPOINTS, AUTH_STORAGE_KEY } from '$lib/constants';
+
+// Removed hardcoded /api
+
+// Lock to prevent multiple concurrent refresh token calls
+let refreshPromise: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
-	try {
-		// Raw fetch to avoid infinite loops
-		const csrfToken = getCSRFToken();
-		const response = await fetch(`${API_BASE}/auth/refresh`, {
-			method: 'POST',
-			headers: {
-				'X-CSRF-Token': csrfToken
-			},
-			credentials: 'include'
-		});
+	if (refreshPromise) return refreshPromise;
 
-		if (response.ok) {
-			const data: AuthResponse = await response.json();
-			accessToken.set(data.access_token);
-			return data.access_token;
+	refreshPromise = (async () => {
+		try {
+			const csrfToken = getCSRFToken();
+			const response = await fetch(`${API_BASE}/auth/refresh`, {
+				method: 'POST',
+				headers: { 'X-CSRF-Token': csrfToken },
+				credentials: 'include'
+			});
+
+			if (response.ok) {
+				const data: AuthResponse = await response.json();
+				accessToken.set(data.access_token);
+				return data.access_token;
+			}
+			return null;
+		} catch {
+			return null;
+		} finally {
+			refreshPromise = null;
 		}
-		return null;
-	} catch (error) {
-		return null;
-	}
+	})();
+
+	return refreshPromise;
 }
 
-export async function client<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-	// 1. Get current token
-	let token = get(accessToken);
+export async function client<T>(
+	endpoint: string,
+	options: Omit<RequestInit, 'body'> & {
+		body?: BodyInit | Record<string, unknown> | null;
+		responseType?: 'json' | 'text' | 'blob';
+	} = {}
+): Promise<T> {
+	let token: string = accessToken.value;
 
-	// 2. Check expiration and refresh if needed
-	// Only check if we have a token (implying we think we are logged in)
-	// or if we might need to be logged in.
-	// However, for public endpoints (like login), we might have no token.
-	// We skip this check if no token is present initially?
-	// User logic: "if (isTokenExpired(currentToken)) { refresh... }"
-	// If token is empty string, isTokenExpired returns true.
-	// We should only try to refresh if we actually expect to be authenticated??
-	// But maybe the user IS logged in but the memory store is empty (page reload)?
-	// If page reload, store is empty. access_token is lost.
-	// We MUST try to refresh on first load if we want persistence.
+	const isPublic = PUBLIC_ENDPOINTS.some((p) => endpoint.startsWith(p));
+	const hasAuthHint = browser ? localStorage.getItem(AUTH_STORAGE_KEY) === 'true' : false;
 
-	// List of public endpoints that don't need auth
-	const publicEndpoints = [
-		'/auth/signin',
-		'/users/signup',
-		'/auth/forgot-password',
-		'/auth/reset-password',
-		'/auth/verify-email',
-		'/auth/send-verification'
-	];
-
-	const isPublic = publicEndpoints.some((p) => endpoint.includes(p));
-
-	// Only attempt refresh if:
-	// 1. Token is present but expired
-	// 2. OR Token is missing AND it's NOT a public endpoint (trying to restore session)
-	// Actually, simple rule: If we are not accessing a public endpoint, try to ensure we have a token.
-	if (!isPublic) {
-		if (isTokenExpired(token)) {
-			// Try to refresh
-			const newToken = await refreshAccessToken();
-			if (newToken) {
-				token = newToken;
-			} else {
+	if (isTokenExpired(token) && (!isPublic || hasAuthHint)) {
+		const newToken = await refreshAccessToken();
+		if (newToken) {
+			token = newToken;
+		} else {
+			isAuthenticated.set(false);
+			if (!isPublic) {
 				token = '';
+				// Return a promise that never resolves to silence the UI
+				return new Promise(() => {});
 			}
 		}
 	}
 
-	// 3. Prepare headers
 	const csrfToken = getCSRFToken();
 	const defaultHeaders: Record<string, string> = {
 		'Content-Type': 'application/json',
@@ -86,17 +75,15 @@ export async function client<T>(endpoint: string, options: RequestInit = {}): Pr
 		defaultHeaders['Authorization'] = `Bearer ${token}`;
 	}
 
-	const config: RequestInit = {
+	const config = {
 		...options,
 		headers: {
 			...defaultHeaders,
 			...options.headers
 		},
-		credentials: 'include' // Important for cookies (refresh_token, csrf_token)
+		credentials: 'include' as RequestCredentials
 	};
 
-	// 4. Execute fetch
-	// If options.body is an object, stringify it
 	if (
 		config.body &&
 		typeof config.body !== 'string' &&
@@ -106,20 +93,33 @@ export async function client<T>(endpoint: string, options: RequestInit = {}): Pr
 		config.body = JSON.stringify(config.body);
 	}
 
-	const response = await fetch(`${API_BASE}${endpoint}`, config);
+	const response = await fetch(`${API_BASE}${endpoint}`, config as RequestInit);
 
-	// 5. Handle response
-	let data: any;
-	const contentType = response.headers.get('content-type');
-	if (contentType && contentType.includes('application/json')) {
-		data = await response.json();
-	} else {
-		data = await response.text();
-	}
+	if (response.status === 204) return undefined as T;
 
 	if (!response.ok) {
-		throw data as ApiError;
+		let errorData: unknown;
+		const contentType = response.headers.get('content-type');
+		if (contentType && contentType.includes('application/json')) {
+			errorData = await response.json();
+		} else {
+			errorData = await response.text();
+		}
+
+		const error =
+			typeof errorData === 'object' && errorData !== null
+				? { ...errorData, status: response.status }
+				: { detail: errorData, status: response.status };
+
+		throw error as ApiError;
 	}
 
-	return data as T;
+	if (options.responseType === 'blob') return (await response.blob()) as T;
+	if (options.responseType === 'text') return (await response.text()) as T;
+
+	const contentType = response.headers.get('content-type');
+	if (contentType && contentType.includes('application/json')) {
+		return (await response.json()) as T;
+	}
+	return (await response.text()) as T;
 }

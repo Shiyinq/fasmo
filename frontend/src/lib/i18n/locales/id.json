@@ -1,0 +1,117 @@
+{
+	"common": {
+		"login": "Masuk",
+		"register": "Daftar",
+		"logout": "Keluar",
+		"username": "Nama Pengguna",
+		"password": "Kata Sandi",
+		"email": "Email",
+		"loading": "Memuat...",
+		"error": "Terjadi kesalahan",
+		"success": "Berhasil",
+		"cancel": "Batal",
+		"save": "Simpan",
+		"delete": "Hapus"
+	},
+	"landing": {
+		"hero": "Arsitektur Kecepatan Tinggi",
+		"tagline": "Gerbang Anda menuju arsitektur generasi berikutnya. Terpadu mulus untuk kecepatan maksimum.",
+		"features": {
+			"fast": {
+				"title": "Sangat Cepat",
+				"desc": "Ditenagai oleh Vite dan FastAPI untuk kecepatan luar biasa."
+			},
+			"secure": {
+				"title": "Auth Aman",
+				"desc": "Autentikasi berbasis JWT dengan dukungan OAuth bawaan."
+			},
+			"modern": {
+				"title": "UI Modern",
+				"desc": "Sistem desain glassmorphism yang ramping siap digunakan."
+			}
+		}
+	},
+	"auth": {
+		"welcome_back": "Selamat Datang Kembali",
+		"create_account": "Buat Akun",
+		"forgot_password": "Lupa Kata Sandi?",
+		"already_have_account": "Sudah punya akun?",
+		"dont_have_account": "Belum punya akun?",
+		"login_subtitle": "Lanjutkan sesi Anda. Masuk ke dalam aliran.",
+		"remember_me": "Ingat saya",
+		"logging_in": "Sedang masuk...",
+		"or_continue_with": "Atau lanjut dengan",
+		"username_placeholder": "Nama Pengguna atau Email",
+		"register_subtitle": "Bergabunglah dengan generasi berikutnya. Bangun masa depan Anda.",
+		"full_name": "Nama Lengkap",
+		"confirm_password": "Konfirmasi Kata Sandi",
+		"creating_account": "Sedang mendaftar...",
+		"next": "Lanjut",
+		"back": "Kembali",
+		"step": "Langkah {step} dari {total}",
+		"reset_password": "Atur Ulang Kata Sandi",
+		"reset_password_subtitle": "Amankan kembali akun Anda. Pilih kunci baru.",
+		"new_password": "Kata Sandi Baru",
+		"resetting": "Mengatur ulang...",
+		"reset_success": "Kata sandi berhasil diatur ulang. Mengalihkan ke halaman masuk...",
+		"password_requirements": "Persyaratan Kata Sandi",
+		"req_length": "Minimal 8 karakter",
+		"req_number": "Mengandung angka",
+		"req_special": "Mengandung karakter khusus",
+		"req_match": "Kata sandi cocok",
+		"forgot_password_subtitle": "Kehilangan akses? Mulai protokol pemulihan.",
+		"check_inbox": "Cek kotak masuk Anda",
+		"recovery_sent": "Kami telah mengirimkan instruksi pemulihan kata sandi ke",
+		"back_to_login": "Kembali ke Masuk",
+		"recovery_helper": "Kami akan mengirimkan tautan untuk mengatur ulang kata sandi Anda.",
+		"send_reset_link": "Kirim Tautan Atur Ulang"
+	},
+	"dashboard": {
+		"title": "Dasbor",
+		"system_status": "Status sistem",
+		"active": "Aktif",
+		"api_access": "Akses API",
+		"status": "Status",
+		"active_status": "Aktif",
+		"inactive_status": "Tidak Aktif",
+		"copy": "Salin",
+		"revoke": "Cabut",
+		"generate_key": "Buat Kunci",
+		"generating": "Memproses...",
+		"hover_to_view": "Arahkan kursor untuk melihat kunci. Jaga kerahasiaannya.",
+		"no_key": "Tidak ada kunci API aktif ditemukan.",
+		"copied": "Disalin ke papan klip.",
+		"revoked": "Kunci API dicabut.",
+		"revoke_confirm": "Apakah Anda yakin ingin memutuskan sambungan? Tindakan ini tidak dapat dibatalkan.",
+		"gen_success": "Kunci API berhasil dibuat."
+	},
+	"errors": {
+		"404": {
+			"title": "Halaman Tidak Ditemukan",
+			"subtitle": "Sinyal telah mencapai jalan buntu.",
+			"description": "Frekuensi yang Anda cari tidak ada di sektor ini atau telah dipindahkan ke koordinat yang berbeda."
+		},
+		"500": {
+			"title": "Kegagalan Sistem",
+			"subtitle": "Terjadi kesalahan kritis pada inti.",
+			"description": "Sistem kami mengalami anomali internal. Kami sedang bekerja untuk memulihkan arsitektur kecepatan tinggi."
+		},
+		"403": {
+			"title": "Akses Ditolak",
+			"subtitle": "Tingkat izin Anda tidak mencukupi.",
+			"description": "Frekuensi ini dibatasi. Hubungi administrator jika Anda yakin ini adalah kesalahan."
+		},
+		"401": {
+			"title": "Tidak Terautentikasi",
+			"subtitle": "Protokol memerlukan autentikasi.",
+			"description": "Transmisi Anda kekurangan kredensial yang diperlukan. Silakan masuk untuk melanjutkan aliran."
+		},
+		"default": {
+			"title": "Interferensi Sinyal",
+			"subtitle": "Terjadi anomali yang tidak terduga.",
+			"description": "Kami mengalami gangguan sementara. Silakan coba hubungkan kembali koneksi."
+		},
+		"goHome": "Kembali ke Basis",
+		"tryAgain": "Hubungkan Kembali"
+	}
+}

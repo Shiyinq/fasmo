@@ -1,36 +1,33 @@
 <script lang="ts">
-	import { auth } from '$lib/apis/auth';
+	import { authStore } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { fade, fly, slide } from 'svelte/transition';
+	import { useTranslation } from '$lib/i18n/useTranslation';
+	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
+	import SEO from '$lib/components/common/SEO.svelte';
 
-	let step = 1;
-	let totalSteps = 2;
+	const { t } = useTranslation();
+
+	let step = $state(1);
 
 	// Form Data
-	let name = '';
-	let username = '';
-	let email = '';
-	let password = '';
-	let confirmPassword = '';
+	let name = $state('');
+	let username = $state('');
+	let email = $state('');
+	let password = $state('');
+	let confirmPassword = $state('');
 
-	// Checklist Requirement States
-	let reqLength = false;
-	let reqNumber = false;
-	let reqSpecial = false;
-	let reqMatch = false;
+	let reqLength = $derived(password.length > 7);
+	let reqNumber = $derived(/[0-9]/.test(password));
+	let reqSpecial = $derived(/[^A-Za-z0-9]/.test(password));
+	let reqMatch = $derived(password.length > 0 && password === confirmPassword);
 
-	$: {
-		reqLength = password.length > 7;
-		reqNumber = /[0-9]/.test(password);
-		reqSpecial = /[^A-Za-z0-9]/.test(password);
-		reqMatch = password.length > 0 && password === confirmPassword;
-	}
-
-	let loading = false;
-	let error = '';
+	// Using global store states (SDD)
+	let loading = $derived(authStore.isLoading);
+	let error = $derived(authStore.error);
 
 	// Password Strength
-	$: passwordStrength = calculateStrength(password);
+	let passwordStrength = $derived(calculateStrength(password));
 
 	function calculateStrength(pw: string) {
 		if (!pw) return 0;
@@ -61,25 +58,18 @@
 			return;
 		}
 
-		loading = true;
-		error = '';
-
 		if (password !== confirmPassword) {
-			error = 'Passwords do not match';
-			loading = false;
+			// Small exception for local validation
 			return;
 		}
 
 		try {
-			await auth.register({ name, username, email, password, confirmPassword });
+			await authStore.register({ name, username, email, password, confirmPassword });
 			// Auto login after register
-			await auth.login({ username: email, password });
+			await authStore.login({ username: email, password });
 			goto('/app');
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			error = typeof e.detail === 'string' ? e.detail : 'Registration failed.';
-		} finally {
-			loading = false;
 		}
 	}
 
@@ -101,25 +91,25 @@
 
 	function handleSocialLogin(provider: 'google' | 'github') {
 		if (provider === 'google') {
-			window.location.href = auth.googleLoginUrl;
+			window.location.href = authStore.googleLoginUrl;
 		} else if (provider === 'github') {
-			window.location.href = auth.githubLoginUrl;
+			window.location.href = authStore.githubLoginUrl;
 		}
 	}
 </script>
 
-<svelte:head>
-	<title>FASMO | Join the Network</title>
-	<meta name="description" content="Create your digital identity and access the FASMO network." />
-</svelte:head>
+<SEO title="FASMO | {t('common.register')}" description="Join the FASMO network." />
 
 <div class="page-container">
+	<div class="top-actions">
+		<LanguageSwitcher />
+	</div>
 	<div class="content">
 		<!-- Visual Section -->
 		<div class="visual-pane" in:fly={{ y: 20, duration: 1000, delay: 200 }}>
 			<div class="header-section">
 				<h1>JOIN</h1>
-				<p class="subtitle">Create your digital identity.<br />Access the network.</p>
+				<p class="subtitle">{t('auth.register_subtitle')}</p>
 			</div>
 
 			<div class="asset-wrapper">
@@ -138,7 +128,13 @@
 				<div class="step-indicator {step >= 2 ? 'active' : ''}"></div>
 			</div>
 
-			<form class="register-form" on:submit|preventDefault={handleRegister}>
+			<form
+				class="register-form"
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleRegister();
+				}}
+			>
 				{#if error}
 					<div class="error-banner" transition:fade>
 						<span class="error-icon">!</span>
@@ -154,7 +150,7 @@
 							out:fly={{ x: 20, duration: 400 }}
 						>
 							<div class="input-group">
-								<label for="name" class="input-label">Full Name</label>
+								<label for="name" class="input-label">{t('auth.full_name')}</label>
 								<div class="input-wrapper">
 									<input
 										id="name"
@@ -171,7 +167,7 @@
 							</div>
 
 							<div class="input-group">
-								<label for="username" class="input-label">Username</label>
+								<label for="username" class="input-label">{t('common.username')}</label>
 								<div class="input-wrapper">
 									<input
 										id="username"
@@ -188,7 +184,7 @@
 							</div>
 
 							<button type="submit" class="cta-button">
-								Continue
+								{t('auth.next')}
 								<span class="arrow">→</span>
 							</button>
 						</div>
@@ -199,7 +195,7 @@
 							out:fly={{ x: -20, duration: 400 }}
 						>
 							<div class="input-group">
-								<label for="email" class="input-label">Email</label>
+								<label for="email" class="input-label">{t('common.email')}</label>
 								<div class="input-wrapper">
 									<input
 										id="email"
@@ -213,7 +209,7 @@
 							</div>
 
 							<div class="input-group">
-								<label for="password" class="input-label">Password</label>
+								<label for="password" class="input-label">{t('common.password')}</label>
 								<div class="input-wrapper">
 									<input
 										id="password"
@@ -267,7 +263,7 @@
 							</div>
 
 							<div class="input-group">
-								<label for="confirm" class="input-label">Confirm Password</label>
+								<label for="confirm" class="input-label">{t('auth.confirm_password')}</label>
 								<div class="input-wrapper">
 									<input
 										id="confirm"
@@ -306,12 +302,12 @@
 							</div>
 
 							<div class="button-row">
-								<button type="button" class="back-btn" on:click={prevStep}>Back</button>
+								<button type="button" class="back-btn" onclick={prevStep}>{t('auth.back')}</button>
 								<button type="submit" class="cta-button" disabled={loading}>
 									{#if loading}
-										Creating...
+										{t('auth.creating_account')}
 									{:else}
-										REGISTER
+										{t('common.register').toUpperCase()}
 									{/if}
 								</button>
 							</div>
@@ -320,14 +316,14 @@
 				</div>
 
 				<div class="divider">
-					<span>Or join with</span>
+					<span>{t('auth.or_continue_with')}</span>
 				</div>
 
 				<div class="social-actions">
 					<button
 						type="button"
 						class="social-btn"
-						on:click={() => handleSocialLogin('google')}
+						onclick={() => handleSocialLogin('google')}
 						aria-label="Sign up with Google"
 					>
 						<svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -339,7 +335,7 @@
 					<button
 						type="button"
 						class="social-btn"
-						on:click={() => handleSocialLogin('github')}
+						onclick={() => handleSocialLogin('github')}
 						aria-label="Sign up with Github"
 					>
 						<svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -351,8 +347,8 @@
 				</div>
 
 				<div class="footer-login">
-					<p>Already have an account?</p>
-					<a href="/login" class="login-link">Login</a>
+					<p>{t('auth.already_have_account')}</p>
+					<a href="/login" class="login-link">{t('common.login')}</a>
 				</div>
 			</form>
 		</div>
@@ -367,6 +363,13 @@
 		justify-content: center;
 		padding: var(--space-lg);
 		position: relative;
+	}
+
+	.top-actions {
+		position: absolute;
+		top: 1.5rem;
+		right: 1.5rem;
+		z-index: 100;
 	}
 
 	.content {
@@ -468,8 +471,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-bottom: var(--space-xl);
-		gap: 10px;
+		margin-bottom: 2.5rem; /* Increased for breathing room */
+		gap: 12px;
 	}
 
 	.step-indicator {
@@ -525,7 +528,7 @@
 		grid-area: stack;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-md);
+		gap: 1.5rem; /* More consistent spacing */
 		width: 100%;
 	}
 
@@ -634,8 +637,8 @@
 	/* Buttons */
 	.button-row {
 		display: flex;
-		gap: var(--space-md);
-		margin-top: var(--space-md);
+		gap: 1rem;
+		margin-top: 2rem; /* More space before buttons */
 	}
 
 	.cta-button {
@@ -643,8 +646,8 @@
 		padding: 16px;
 		border-radius: 12px;
 		background: linear-gradient(135deg, var(--secondary) 0%, #d40049 100%);
-		color: #fff;
-		font-weight: 700;
+		color: #ffffff; /* Changed from #000 */
+		font-weight: 800;
 		font-size: 1rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -753,9 +756,10 @@
 
 	.social-actions {
 		display: flex;
-		gap: var(--space-md);
+		gap: 1rem;
 		justify-content: center;
-		margin-bottom: var(--space-md);
+		margin-top: 0.5rem;
+		margin-bottom: 1.5rem;
 	}
 
 	.social-btn {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { accessToken } from '$lib/store/auth';
+	import { accessToken } from '$lib/stores/accessToken.svelte';
 	import { auth } from '$lib/apis/auth';
 
 	onMount(async () => {

@@ -1,0 +1,117 @@
+{
+	"common": {
+		"login": "Login",
+		"register": "Register",
+		"logout": "Logout",
+		"username": "Username",
+		"password": "Password",
+		"email": "Email",
+		"loading": "Loading...",
+		"error": "An error occurred",
+		"success": "Success",
+		"cancel": "Cancel",
+		"save": "Save",
+		"delete": "Delete"
+	},
+	"landing": {
+		"hero": "High Velocity Architecture",
+		"tagline": "Your gateway to next-generation architecture. Seamlessly fused for maximum velocity.",
+		"features": {
+			"fast": {
+				"title": "Lightning Fast",
+				"desc": "Powered by Vite and FastAPI for incredible speed."
+			},
+			"secure": {
+				"title": "Secure Auth",
+				"desc": "JWT-based authentication with OAuth support built-in."
+			},
+			"modern": {
+				"title": "Modern UI",
+				"desc": "Sleek glassmorphism design system ready to go."
+			}
+		}
+	},
+	"auth": {
+		"welcome_back": "Welcome Back",
+		"create_account": "Create Account",
+		"forgot_password": "Forgot Password?",
+		"already_have_account": "Already have an account?",
+		"dont_have_account": "Don't have an account?",
+		"login_subtitle": "Resume your session. Enter the stream.",
+		"remember_me": "Remember me",
+		"logging_in": "Logging in...",
+		"or_continue_with": "Or continue with",
+		"username_placeholder": "Username or Email",
+		"register_subtitle": "Join the next generation. Build your future.",
+		"full_name": "Full Name",
+		"confirm_password": "Confirm Password",
+		"creating_account": "Creating account...",
+		"next": "Next",
+		"back": "Back",
+		"step": "Step {step} of {total}",
+		"reset_password": "Reset Password",
+		"reset_password_subtitle": "Secure your account again. Choose a new key.",
+		"new_password": "New Password",
+		"resetting": "Resetting...",
+		"reset_success": "Password reset successful. Redirecting to login...",
+		"password_requirements": "Password Requirements",
+		"req_length": "At least 8 characters",
+		"req_number": "Contains a number",
+		"req_special": "Contains special char",
+		"req_match": "Passwords match",
+		"forgot_password_subtitle": "Lost your key? Initiate recovery protocol.",
+		"check_inbox": "Check your inbox",
+		"recovery_sent": "We have sent a password recovery instruction to",
+		"back_to_login": "Back to Login",
+		"recovery_helper": "We'll send you a link to reset your password.",
+		"send_reset_link": "Send Reset Link"
+	},
+	"dashboard": {
+		"title": "Dashboard",
+		"system_status": "System status",
+		"active": "Active",
+		"api_access": "API Access",
+		"status": "Status",
+		"active_status": "Active",
+		"inactive_status": "Inactive",
+		"copy": "Copy",
+		"revoke": "Revoke",
+		"generate_key": "Generate Key",
+		"generating": "Generating...",
+		"hover_to_view": "Hover to view key. Keep it secret.",
+		"no_key": "No active API key found.",
+		"copied": "Copied to clipboard.",
+		"revoked": "API Key revoked.",
+		"revoke_confirm": "Are you sure you want to sever the connection? This action cannot be undone.",
+		"gen_success": "API Key generated successfully."
+	},
+	"errors": {
+		"404": {
+			"title": "Page Not Found",
+			"subtitle": "The signal has reached a dead end.",
+			"description": "The frequency you are looking for does not exist in this sector or has been moved to a different coordinate."
+		},
+		"500": {
+			"title": "System Failure",
+			"subtitle": "A critical error has occurred in the core.",
+			"description": "Our systems encountered an internal anomaly. We are working to restore the high-velocity architecture."
+		},
+		"403": {
+			"title": "Access Denied",
+			"subtitle": "Your clearance level is insufficient.",
+			"description": "This frequency is restricted. Please contact your administrator if you believe this is an error."
+		},
+		"401": {
+			"title": "Unauthorized",
+			"subtitle": "Protocol requires authentication.",
+			"description": "Your transmission lacks the necessary credentials. Please log in to resume the stream."
+		},
+		"default": {
+			"title": "Signal Interference",
+			"subtitle": "An unexpected anomaly has occurred.",
+			"description": "We've encountered a temporary disruption. Please try to re-establish the connection."
+		},
+		"goHome": "Return to Base",
+		"tryAgain": "Reconnect"
+	}
+}

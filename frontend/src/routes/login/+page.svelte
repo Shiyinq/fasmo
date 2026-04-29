@@ -1,49 +1,54 @@
 <script lang="ts">
-	import { auth } from '$lib/apis/auth';
+	import { authStore } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
+	import { useTranslation } from '$lib/i18n/useTranslation';
+	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
+	import SEO from '$lib/components/common/SEO.svelte';
 
-	let username = '';
-	let password = '';
-	let rememberMe = false;
-	let loading = false;
-	let error = '';
+	const { t } = useTranslation();
+
+	let username = $state('');
+	let password = $state('');
+	let rememberMe = $state(false);
+
+	// Using global store states (SDD)
+	let loading = $derived(authStore.isLoading);
+	let error = $derived(authStore.error);
 
 	async function handleLogin() {
-		loading = true;
-		error = '';
 		try {
-			await auth.login({ username, password });
+			await authStore.login({ username, password });
 			goto('/app');
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			error = e.detail || 'Connection refused.';
-		} finally {
-			loading = false;
 		}
 	}
 
 	function handleSocialLogin(provider: 'google' | 'github') {
 		if (provider === 'google') {
-			window.location.href = auth.googleLoginUrl;
+			window.location.href = authStore.googleLoginUrl;
 		} else if (provider === 'github') {
-			window.location.href = auth.githubLoginUrl;
+			window.location.href = authStore.githubLoginUrl;
 		}
 	}
 </script>
 
-<svelte:head>
-	<title>FASMO | Login</title>
-	<meta name="description" content="Secure login access to the FASMO architecture." />
-</svelte:head>
+<SEO
+	title="FASMO | {t('common.login')}"
+	description="Secure login access to the FASMO architecture."
+/>
 
 <div class="page-container">
+	<div class="top-actions">
+		<LanguageSwitcher />
+	</div>
 	<div class="content">
 		<!-- Visual Section -->
 		<div class="visual-pane" in:fly={{ y: 20, duration: 1000, delay: 200 }}>
 			<div class="header-section">
-				<h1>LOGIN</h1>
-				<p class="subtitle">Resume your session. <br />Enter the stream.</p>
+				<h1>{t('common.login').toUpperCase()}</h1>
+				<p class="subtitle">{t('auth.login_subtitle')}</p>
 			</div>
 
 			<div class="asset-wrapper">
@@ -53,7 +58,13 @@
 
 		<!-- Interaction Section -->
 		<div class="interaction-pane glass-pane" in:fly={{ y: 50, duration: 1000 }}>
-			<form class="login-form" on:submit|preventDefault={handleLogin}>
+			<form
+				class="login-form"
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleLogin();
+				}}
+			>
 				{#if error}
 					<div class="error-banner" transition:fade>
 						<span class="error-icon">!</span>
@@ -62,11 +73,11 @@
 				{/if}
 
 				<div class="input-group">
-					<label for="username" class="visually-hidden">Username or Email</label>
+					<label for="username" class="visually-hidden">{t('auth.username_placeholder')}</label>
 					<input
 						id="username"
 						type="text"
-						placeholder="Username or Email"
+						placeholder={t('auth.username_placeholder')}
 						bind:value={username}
 						class="glass-input"
 						required
@@ -74,11 +85,11 @@
 				</div>
 
 				<div class="input-group">
-					<label for="password" class="visually-hidden">Password</label>
+					<label for="password" class="visually-hidden">{t('common.password')}</label>
 					<input
 						id="password"
 						type="password"
-						placeholder="Password"
+						placeholder={t('common.password')}
 						bind:value={password}
 						class="glass-input"
 						required
@@ -89,29 +100,29 @@
 					<label class="checkbox-container">
 						<input type="checkbox" bind:checked={rememberMe} />
 						<span class="checkmark"></span>
-						<span class="label-text">Remember me</span>
+						<span class="label-text">{t('auth.remember_me')}</span>
 					</label>
-					<a href="/forgot-password" class="link-text">Forgot Password?</a>
+					<a href="/forgot-password" class="link-text">{t('auth.forgot_password')}</a>
 				</div>
 
 				<button type="submit" class="cta-button" disabled={loading}>
 					{#if loading}
-						<span class="loading-dots">Logging in...</span>
+						<span class="loading-dots">{t('auth.logging_in')}</span>
 					{:else}
-						LOGIN
+						{t('common.login').toUpperCase()}
 					{/if}
 				</button>
 
 				<div class="divider">
-					<span>Or continue with</span>
+					<span>{t('auth.or_continue_with')}</span>
 				</div>
 
 				<div class="social-actions">
 					<button
 						type="button"
 						class="social-btn"
-						on:click={() => handleSocialLogin('google')}
-						aria-label="Login with Google"
+						onclick={() => handleSocialLogin('google')}
+						aria-label={t('auth.or_continue_with') + ' Google'}
 					>
 						<!-- Google Icon placeholder or SVG -->
 						<svg class="social-icon" viewBox="0 0 24 24" fill="currentColor"
@@ -123,8 +134,8 @@
 					<button
 						type="button"
 						class="social-btn"
-						on:click={() => handleSocialLogin('github')}
-						aria-label="Login with Github"
+						onclick={() => handleSocialLogin('github')}
+						aria-label={t('auth.or_continue_with') + ' Github'}
 					>
 						<!-- Github Icon placeholder or SVG -->
 						<svg class="social-icon" viewBox="0 0 24 24" fill="currentColor"
@@ -136,8 +147,8 @@
 				</div>
 
 				<div class="footer-register">
-					<p>Don't have an account?</p>
-					<a href="/register" class="create-account-link">Create Account</a>
+					<p>{t('auth.dont_have_account')}</p>
+					<a href="/register" class="create-account-link">{t('auth.create_account')}</a>
 				</div>
 			</form>
 		</div>
@@ -152,6 +163,13 @@
 		justify-content: center;
 		padding: var(--space-lg);
 		position: relative;
+	}
+
+	.top-actions {
+		position: absolute;
+		top: 1.5rem;
+		right: 1.5rem;
+		z-index: 100;
 	}
 
 	.content {
@@ -241,7 +259,7 @@
 	.login-form {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-md);
+		gap: 1.5rem; /* Increased from var(--space-md) */
 	}
 
 	.input-group {
@@ -276,7 +294,8 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-top: -8px;
+		margin-top: -0.5rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.checkbox-container {
@@ -353,15 +372,15 @@
 		padding: 16px;
 		border-radius: 12px;
 		background: linear-gradient(135deg, var(--primary) 0%, #00c2bb 100%);
-		color: #000;
-		font-weight: 700;
+		color: #ffffff; /* Changed from #000 */
+		font-weight: 800;
 		font-size: 1rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		transition: all 0.3s var(--ease-elastic);
 		position: relative;
 		overflow: hidden;
-		margin-top: var(--space-xs);
+		margin-top: 0.5rem;
 	}
 
 	.cta-button:hover:not(:disabled) {
@@ -403,8 +422,9 @@
 
 	.social-actions {
 		display: flex;
-		gap: var(--space-md);
+		gap: 1rem;
 		justify-content: center;
+		margin-top: 0.5rem;
 	}
 
 	.social-btn {

@@ -1,12 +1,14 @@
 import { client } from './client';
-import type { APIKeysResponse } from '$lib/types';
+import type { APIKeyResponse } from '$lib/types';
 
 export const apiKeys = {
-	create: async (): Promise<APIKeysResponse> => {
-		return client<APIKeysResponse>('/key', { method: 'POST' });
+	create: async (): Promise<APIKeyResponse> => {
+		return client<APIKeyResponse>('/api_keys/', {
+			method: 'POST'
+		});
 	},
 
-	revoke: async (): Promise<APIKeysResponse> => {
-		return client<APIKeysResponse>('/key', { method: 'DELETE' });
+	revoke: async (): Promise<APIKeyResponse> => {
+		return client<APIKeyResponse>('/key', { method: 'DELETE' });
 	}
 };
