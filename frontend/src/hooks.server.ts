@@ -33,7 +33,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 			return response;
 		} catch (error) {
-			console.error('Proxy error:', error);
+			// Server-side log — safe to use process.env here
+			if (process.env.NODE_ENV !== 'production') {
+				console.error('[hooks.server] Proxy error:', error);
+			}
 			return new Response('Proxy Error', { status: 502 });
 		}
 	}
