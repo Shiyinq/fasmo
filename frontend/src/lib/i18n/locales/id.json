@@ -64,7 +64,23 @@
 		"recovery_sent": "Kami telah mengirimkan instruksi pemulihan kata sandi ke",
 		"back_to_login": "Kembali ke Masuk",
 		"recovery_helper": "Kami akan mengirimkan tautan untuk mengatur ulang kata sandi Anda.",
-		"send_reset_link": "Kirim Tautan Atur Ulang"
+		"send_reset_link": "Kirim Tautan Atur Ulang",
+		"verify_email": {
+			"title": "Verifikasi Email",
+			"verifying": "MEMVERIFIKASI",
+			"verifying_subtitle": "Mengonfirmasi sinyal Anda. \nMohon tunggu...",
+			"verified": "TERVERIFIKASI",
+			"verified_subtitle": "Koneksi terbentuk. \nAnda telah masuk dalam sistem.",
+			"failed": "GAGAL",
+			"failed_subtitle": "Sinyal terputus. \nVerifikasi tidak berhasil.",
+			"status_verifying": "Memverifikasi Email",
+			"status_verifying_desc": "Mohon tunggu sementara kami mengonfirmasi identitas Anda...",
+			"status_success": "Email Terverifikasi!",
+			"status_success_desc": "Email Anda telah berhasil diverifikasi. Anda sekarang memiliki akses penuh ke FASMO.",
+			"status_error": "Verifikasi Gagal",
+			"proceed_to_login": "LANJUT KE MASUK",
+			"no_token": "Token verifikasi tidak ditemukan."
+		}
 	},
 	"dashboard": {
 		"title": "Dasbor",

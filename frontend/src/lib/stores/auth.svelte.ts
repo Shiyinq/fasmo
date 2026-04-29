@@ -9,6 +9,8 @@ import type {
 import { accessToken } from '$lib/stores/accessToken.svelte';
 import { isAuthenticated } from '$lib/stores/authStatus.svelte';
 import { createRequestDedup } from '$lib/utils/requestDedup';
+import { getErrorMessage } from '$lib/utils/api';
+import { logger } from '$lib/utils/logger';
 
 /**
  * Auth actions service - migrated to Svelte 5 Shared Rune State.
@@ -43,7 +45,8 @@ export function createAuthStore() {
 				}
 				return response;
 			} catch (e: any) {
-				error = e.detail || 'Login failed.';
+				error = getErrorMessage(e);
+				logger.error('Login failed', e, { context: 'authStore' });
 				throw e;
 			} finally {
 				isLoading = false;
@@ -57,7 +60,8 @@ export function createAuthStore() {
 				const res = await authApi.register(data);
 				return res;
 			} catch (e: any) {
-				error = e.detail || 'Registration failed.';
+				error = getErrorMessage(e);
+				logger.error('Registration failed', e, { context: 'authStore' });
 				throw e;
 			} finally {
 				isLoading = false;
@@ -89,7 +93,8 @@ export function createAuthStore() {
 			try {
 				return await authApi.forgotPassword(data);
 			} catch (e: any) {
-				error = e.detail || 'Recovery request failed.';
+				error = getErrorMessage(e);
+				logger.error('Forgot password request failed', e, { context: 'authStore' });
 				throw e;
 			} finally {
 				isLoading = false;
@@ -102,7 +107,8 @@ export function createAuthStore() {
 			try {
 				return await authApi.resetPassword(data);
 			} catch (e: any) {
-				error = e.detail || 'Password reset failed.';
+				error = getErrorMessage(e);
+				logger.error('Password reset failed', e, { context: 'authStore' });
 				throw e;
 			} finally {
 				isLoading = false;
@@ -115,7 +121,8 @@ export function createAuthStore() {
 			try {
 				return await authApi.verifyEmail(data);
 			} catch (e: any) {
-				error = e.detail || 'Email verification failed.';
+				error = getErrorMessage(e);
+				logger.error('Email verification failed', e, { context: 'authStore' });
 				throw e;
 			} finally {
 				isLoading = false;

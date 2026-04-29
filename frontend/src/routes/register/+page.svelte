@@ -158,7 +158,6 @@
 								label={t('auth.full_name')}
 								placeholder="e.g. Alex Chen"
 								bind:value={name}
-								
 								required
 							>
 								{#snippet append()}
@@ -174,7 +173,6 @@
 								label={t('common.username')}
 								placeholder="e.g. achen"
 								bind:value={username}
-								
 								required
 							>
 								{#snippet append()}
@@ -201,7 +199,6 @@
 								label={t('common.email')}
 								placeholder="name@example.com"
 								bind:value={email}
-								
 								required
 							/>
 
@@ -212,7 +209,6 @@
 									label={t('common.password')}
 									placeholder="••••••••"
 									bind:value={password}
-									
 									required
 								/>
 
@@ -264,7 +260,6 @@
 									label={t('auth.confirm_password')}
 									placeholder="••••••••"
 									bind:value={confirmPassword}
-									
 									required
 								>
 									{#snippet append()}
@@ -535,7 +530,6 @@
 		gap: 6px;
 	}
 
-
 	.valid-icon {
 		position: absolute;
 		right: 15px;
@@ -607,7 +601,6 @@
 		gap: 1rem;
 		margin-top: 2rem; /* More space before buttons */
 	}
-
 
 	.footer-login {
 		margin-top: auto;

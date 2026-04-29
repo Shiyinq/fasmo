@@ -80,7 +80,6 @@
 					type="text"
 					placeholder={t('auth.username_placeholder')}
 					bind:value={username}
-					
 					required
 				/>
 
@@ -89,7 +88,6 @@
 					type="password"
 					placeholder={t('common.password')}
 					bind:value={password}
-					
 					required
 				/>
 
@@ -259,7 +257,6 @@
 		gap: 1.5rem; /* Increased from var(--space-md) */
 	}
 
-
 	/* Form Options */
 	.form-options {
 		display: flex;
@@ -336,7 +333,6 @@
 		color: #fff;
 		text-shadow: 0 0 10px var(--primary-glow);
 	}
-
 
 	.divider {
 		display: flex;

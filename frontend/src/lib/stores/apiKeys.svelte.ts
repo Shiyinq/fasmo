@@ -1,4 +1,6 @@
 import { apiKeys as apiKeysApi } from '$lib/apis/api_keys';
+import { getErrorMessage } from '$lib/utils/api';
+import { logger } from '$lib/utils/logger';
 
 let currentKey = $state('');
 let isLoading = $state(false);
@@ -24,7 +26,8 @@ export function createApiKeysStore() {
 				currentKey = res.apiKey;
 				return res;
 			} catch (e: any) {
-				error = e.detail || 'Failed to generate key.';
+				error = getErrorMessage(e);
+				logger.error('API Key generation failed', e, { context: 'apiKeysStore' });
 				throw e;
 			} finally {
 				isLoading = false;
@@ -40,7 +43,8 @@ export function createApiKeysStore() {
 				await apiKeysApi.revoke();
 			} catch (e: any) {
 				currentKey = previousKey; // Rollback if API fails
-				error = e.detail || 'Failed to revoke key.';
+				error = getErrorMessage(e);
+				logger.error('API Key revocation failed', e, { context: 'apiKeysStore' });
 				throw e;
 			} finally {
 				isLoading = false;

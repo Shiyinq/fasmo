@@ -164,7 +164,6 @@
 							type={showPassword ? 'text' : 'password'}
 							placeholder={showPassword ? 'New secure password' : t('auth.new_password')}
 							bind:value={newPassword}
-							
 							required
 						/>
 					</div>
@@ -211,7 +210,6 @@
 							type={showPassword ? 'text' : 'password'}
 							placeholder={showPassword ? 'Confirm new password' : t('auth.confirm_password')}
 							bind:value={confirmPassword}
-							
 							required
 						>
 							{#snippet append()}
@@ -419,7 +417,6 @@
 		letter-spacing: 0.05em;
 	}
 
-
 	.check-indicator {
 		position: absolute;
 		right: 15px;
@@ -461,7 +458,6 @@
 		margin-top: var(--space-sm);
 		text-align: center;
 	}
-
 
 	.cancel-link {
 		color: var(--text-muted);

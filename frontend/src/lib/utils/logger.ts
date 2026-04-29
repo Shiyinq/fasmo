@@ -1,5 +1,6 @@
 import { dev } from '$app/environment';
 import { addToast } from '$lib/stores';
+import { getErrorMessage } from '$lib/utils/api';
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -28,8 +29,16 @@ class Logger {
 		// Optional user feedback via toast
 		if (options?.showToast) {
 			const toastType = level === 'error' ? 'error' : 'success';
-			const toastMsg =
-				options.toastMessage || (level === 'error' ? 'An unexpected error occurred' : message);
+			let toastMsg = options.toastMessage;
+
+			if (!toastMsg) {
+				if (level === 'error') {
+					toastMsg = error ? getErrorMessage(error) : 'An unexpected error occurred';
+				} else {
+					toastMsg = message;
+				}
+			}
+
 			addToast(toastMsg, toastType);
 		}
 	}
