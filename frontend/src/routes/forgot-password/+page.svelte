@@ -3,6 +3,8 @@
 	import { fade, fly } from 'svelte/transition';
 	import { useTranslation } from '$lib/i18n/useTranslation';
 	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
+	import Input from '$lib/components/Input.svelte';
+	import Button from '$lib/components/Button.svelte';
 
 	const { t } = useTranslation();
 
@@ -81,26 +83,24 @@
 						</div>
 					{/if}
 
-					<div class="input-group">
-						<label for="email" class="input-label">{t('common.email')}</label>
-						<p class="helper-text">{t('auth.recovery_helper')}</p>
-						<input
-							id="email"
-							type="email"
-							placeholder={t('common.email')}
-							bind:value={email}
-							class="glass-input"
-							required
-						/>
-					</div>
+					<p class="helper-text" style="margin-bottom: 8px;">{t('auth.recovery_helper')}</p>
+					<Input
+						id="email"
+						type="email"
+						label={t('common.email')}
+						placeholder={t('common.email')}
+						bind:value={email}
+						
+						required
+					/>
 
-					<button type="submit" class="cta-button" disabled={loading}>
-						{#if loading}
-							<span class="loading-dots">{t('common.loading')}</span>
-						{:else}
+					<Button type="submit" full {loading} style="margin-top: 16px;">
+						{#if !loading}
 							{t('auth.send_reset_link').toUpperCase()}
+						{:else}
+							{t('common.loading')}
 						{/if}
-					</button>
+					</Button>
 
 					<a href="/login" class="back-link"> ← {t('auth.back_to_login')} </a>
 				</form>
@@ -218,41 +218,10 @@
 		gap: 1.5rem;
 	}
 
-	.input-group {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.input-label {
-		font-weight: 600;
-		font-size: 0.95rem;
-		color: var(--ghost-white);
-	}
-
 	.helper-text {
 		font-size: 0.85rem;
 		color: var(--text-muted);
 		margin-bottom: 4px;
-	}
-
-	.glass-input {
-		width: 100%;
-		background: rgba(255, 255, 255, 0.03);
-		border: 1px solid var(--glass-border);
-		border-radius: 12px;
-		padding: 16px 20px;
-		color: var(--ghost-white);
-		font-family: var(--font-body);
-		font-size: 1rem;
-		transition: all 0.3s var(--ease-smooth);
-	}
-
-	.glass-input:focus {
-		outline: none;
-		border-color: var(--warning);
-		box-shadow: 0 0 15px rgba(255, 191, 0, 0.15);
-		background: rgba(255, 255, 255, 0.05);
 	}
 
 	.cta-button {

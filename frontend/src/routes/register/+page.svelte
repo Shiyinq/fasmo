@@ -5,6 +5,8 @@
 	import { useTranslation } from '$lib/i18n/useTranslation';
 	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
 	import SEO from '$lib/components/common/SEO.svelte';
+	import Input from '$lib/components/Input.svelte';
+	import Button from '$lib/components/Button.svelte';
 
 	const { t } = useTranslation();
 
@@ -149,44 +151,42 @@
 							in:fly={{ x: -20, duration: 400 }}
 							out:fly={{ x: 20, duration: 400 }}
 						>
-							<div class="input-group">
-								<label for="name" class="input-label">{t('auth.full_name')}</label>
-								<div class="input-wrapper">
-									<input
-										id="name"
-										type="text"
-										placeholder="e.g. Alex Chen"
-										bind:value={name}
-										class="glass-input"
-										required
-									/>
+							<Input
+								id="name"
+								type="text"
+								label={t('auth.full_name')}
+								placeholder="e.g. Alex Chen"
+								bind:value={name}
+								
+								required
+							>
+								{#snippet append()}
 									{#if name.length > 2}
 										<div class="valid-icon" in:fade>✓</div>
 									{/if}
-								</div>
-							</div>
+								{/snippet}
+							</Input>
 
-							<div class="input-group">
-								<label for="username" class="input-label">{t('common.username')}</label>
-								<div class="input-wrapper">
-									<input
-										id="username"
-										type="text"
-										placeholder="e.g. achen"
-										bind:value={username}
-										class="glass-input"
-										required
-									/>
+							<Input
+								id="username"
+								type="text"
+								label={t('common.username')}
+								placeholder="e.g. achen"
+								bind:value={username}
+								
+								required
+							>
+								{#snippet append()}
 									{#if username.length > 2}
 										<div class="valid-icon" in:fade>✓</div>
 									{/if}
-								</div>
-							</div>
+								{/snippet}
+							</Input>
 
-							<button type="submit" class="cta-button">
+							<Button type="submit" full>
 								{t('auth.next')}
 								<span class="arrow">→</span>
-							</button>
+							</Button>
 						</div>
 					{:else}
 						<div
@@ -194,32 +194,26 @@
 							in:fly={{ x: 20, duration: 400 }}
 							out:fly={{ x: -20, duration: 400 }}
 						>
-							<div class="input-group">
-								<label for="email" class="input-label">{t('common.email')}</label>
-								<div class="input-wrapper">
-									<input
-										id="email"
-										type="email"
-										placeholder="name@example.com"
-										bind:value={email}
-										class="glass-input"
-										required
-									/>
-								</div>
-							</div>
+							<Input
+								id="email"
+								type="email"
+								label={t('common.email')}
+								placeholder="name@example.com"
+								bind:value={email}
+								
+								required
+							/>
 
 							<div class="input-group">
-								<label for="password" class="input-label">{t('common.password')}</label>
-								<div class="input-wrapper">
-									<input
-										id="password"
-										type="password"
-										placeholder="••••••••"
-										bind:value={password}
-										class="glass-input"
-										required
-									/>
-								</div>
+								<Input
+									id="password"
+									type="password"
+									label={t('common.password')}
+									placeholder="••••••••"
+									bind:value={password}
+									
+									required
+								/>
 
 								<!-- Password Strength -->
 								{#if password}
@@ -263,20 +257,21 @@
 							</div>
 
 							<div class="input-group">
-								<label for="confirm" class="input-label">{t('auth.confirm_password')}</label>
-								<div class="input-wrapper">
-									<input
-										id="confirm"
-										type="password"
-										placeholder="••••••••"
-										bind:value={confirmPassword}
-										class="glass-input"
-										required
-									/>
-									{#if confirmPassword && confirmPassword === password}
-										<div class="valid-icon" in:fade>✓</div>
-									{/if}
-								</div>
+								<Input
+									id="confirm"
+									type="password"
+									label={t('auth.confirm_password')}
+									placeholder="••••••••"
+									bind:value={confirmPassword}
+									
+									required
+								>
+									{#snippet append()}
+										{#if confirmPassword && confirmPassword === password}
+											<div class="valid-icon" in:fade>✓</div>
+										{/if}
+									{/snippet}
+								</Input>
 
 								<!-- Requirements Checklist -->
 								{#if password}
@@ -302,14 +297,14 @@
 							</div>
 
 							<div class="button-row">
-								<button type="button" class="back-btn" onclick={prevStep}>{t('auth.back')}</button>
-								<button type="submit" class="cta-button" disabled={loading}>
-									{#if loading}
-										{t('auth.creating_account')}
-									{:else}
+								<Button type="button" class="back-btn" onclick={prevStep}>{t('auth.back')}</Button>
+								<Button type="submit" full {loading}>
+									{#if !loading}
 										{t('common.register').toUpperCase()}
+									{:else}
+										{t('auth.creating_account')}
 									{/if}
-								</button>
+								</Button>
 							</div>
 						</div>
 					{/if}
@@ -539,35 +534,6 @@
 		gap: 6px;
 	}
 
-	.input-label {
-		font-size: 0.85rem;
-		color: var(--text-muted);
-		font-weight: 500;
-		margin-left: 4px;
-	}
-
-	.input-wrapper {
-		position: relative;
-	}
-
-	.glass-input {
-		width: 100%;
-		background: rgba(255, 255, 255, 0.03);
-		border: 1px solid var(--glass-border);
-		border-radius: 12px;
-		padding: 14px 20px;
-		color: var(--ghost-white);
-		font-family: var(--font-body);
-		font-size: 1rem;
-		transition: all 0.3s var(--ease-smooth);
-	}
-
-	.glass-input:focus {
-		outline: none;
-		border-color: var(--secondary);
-		box-shadow: 0 0 15px rgba(255, 0, 85, 0.15);
-		background: rgba(255, 255, 255, 0.05);
-	}
 
 	.valid-icon {
 		position: absolute;
@@ -641,41 +607,6 @@
 		margin-top: 2rem; /* More space before buttons */
 	}
 
-	.cta-button {
-		flex: 1;
-		padding: 16px;
-		border-radius: 12px;
-		background: linear-gradient(135deg, var(--secondary) 0%, #d40049 100%);
-		color: #ffffff; /* Changed from #000 */
-		font-weight: 800;
-		font-size: 1rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		transition: all 0.3s var(--ease-elastic);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-	}
-
-	.cta-button:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 30px var(--secondary-glow);
-	}
-
-	.back-btn {
-		padding: 16px;
-		border-radius: 12px;
-		border: 1px solid var(--glass-border);
-		color: var(--ghost-white);
-		font-weight: 600;
-		font-size: 1rem;
-		transition: all 0.2s ease;
-	}
-
-	.back-btn:hover {
-		background: rgba(255, 255, 255, 0.05);
-	}
 
 	.footer-login {
 		margin-top: auto;

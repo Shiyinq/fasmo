@@ -5,6 +5,8 @@
 	import { onMount } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
 	import { useTranslation } from '$lib/i18n/useTranslation';
+	import Input from '$lib/components/Input.svelte';
+	import Button from '$lib/components/Button.svelte';
 
 	const { t } = useTranslation();
 
@@ -156,27 +158,14 @@
 								{showPassword ? t('common.cancel') : t('common.save')}
 							</button>
 						</div>
-						<div class="input-wrapper">
-							{#if showPassword}
-								<input
-									id="new-password"
-									type="text"
-									placeholder="New secure password"
-									bind:value={newPassword}
-									class="glass-input"
-									required
-								/>
-							{:else}
-								<input
-									id="new-password"
-									type="password"
-									placeholder={t('auth.new_password')}
-									bind:value={newPassword}
-									class="glass-input"
-									required
-								/>
-							{/if}
-						</div>
+						<Input
+							id="new-password"
+							type={showPassword ? 'text' : 'password'}
+							placeholder={showPassword ? 'New secure password' : t('auth.new_password')}
+							bind:value={newPassword}
+							
+							required
+						/>
 					</div>
 
 					<!-- Password Strength Meter -->
@@ -216,30 +205,20 @@
 
 					<div class="input-group">
 						<label for="confirm-password" class="input-label">{t('auth.confirm_password')}</label>
-						<div class="input-wrapper">
-							{#if showPassword}
-								<input
-									id="confirm-password"
-									type="text"
-									placeholder="Confirm new password"
-									bind:value={confirmPassword}
-									class="glass-input {reqMatch && confirmPassword ? 'valid' : ''}"
-									required
-								/>
-							{:else}
-								<input
-									id="confirm-password"
-									type="password"
-									placeholder={t('auth.confirm_password')}
-									bind:value={confirmPassword}
-									class="glass-input {reqMatch && confirmPassword ? 'valid' : ''}"
-									required
-								/>
-							{/if}
-							{#if reqMatch && confirmPassword}
-								<div class="check-indicator" in:fade>✓</div>
-							{/if}
-						</div>
+						<Input
+							id="confirm-password"
+							type={showPassword ? 'text' : 'password'}
+							placeholder={showPassword ? 'Confirm new password' : t('auth.confirm_password')}
+							bind:value={confirmPassword}
+							
+							required
+						>
+							{#snippet append()}
+								{#if reqMatch && confirmPassword}
+									<div class="check-indicator" in:fade>✓</div>
+								{/if}
+							{/snippet}
+						</Input>
 					</div>
 
 					<!-- Security Checklist -->
@@ -263,13 +242,13 @@
 					</div>
 
 					<div class="actions">
-						<button type="submit" class="cta-button" disabled={loading || !allValid}>
-							{#if loading}
-								{t('auth.resetting')}
-							{:else}
+						<Button type="submit" full disabled={!allValid} {loading}>
+							{#if !loading}
 								{t('auth.reset_password').toUpperCase()}
+							{:else}
+								{t('auth.resetting')}
 							{/if}
-						</button>
+						</Button>
 
 						<a href="/login" class="cancel-link">{t('common.cancel')}</a>
 					</div>
@@ -439,32 +418,6 @@
 		letter-spacing: 0.05em;
 	}
 
-	.input-wrapper {
-		position: relative;
-	}
-
-	.glass-input {
-		width: 100%;
-		background: rgba(255, 255, 255, 0.03);
-		border: 1px solid var(--glass-border);
-		border-radius: 12px;
-		padding: 16px 20px;
-		color: var(--ghost-white);
-		font-family: var(--font-body);
-		font-size: 1rem;
-		transition: all 0.3s var(--ease-smooth);
-	}
-
-	.glass-input.valid {
-		border-color: var(--success);
-	}
-
-	.glass-input:focus {
-		outline: none;
-		border-color: var(--success);
-		box-shadow: 0 0 15px rgba(0, 255, 157, 0.15);
-		background: rgba(255, 255, 255, 0.05);
-	}
 
 	.check-indicator {
 		position: absolute;
@@ -508,29 +461,6 @@
 		text-align: center;
 	}
 
-	.cta-button {
-		width: 100%;
-		padding: 16px;
-		border-radius: 12px;
-		background: linear-gradient(135deg, var(--success) 0%, #00bc72 100%);
-		color: #000;
-		font-weight: 700;
-		font-size: 1rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		transition: all 0.3s var(--ease-elastic);
-	}
-
-	.cta-button:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 30px rgba(0, 255, 157, 0.3);
-	}
-
-	.cta-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		filter: grayscale(1);
-	}
 
 	.cancel-link {
 		color: var(--text-muted);

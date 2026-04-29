@@ -3,7 +3,7 @@ import type { APIKeyResponse } from '$lib/types';
 
 export const apiKeys = {
 	create: async (): Promise<APIKeyResponse> => {
-		return client<APIKeyResponse>('/api_keys/', {
+		return client<APIKeyResponse>('/key', {
 			method: 'POST'
 		});
 	},
