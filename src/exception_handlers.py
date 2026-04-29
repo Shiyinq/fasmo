@@ -1,4 +1,5 @@
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -41,6 +42,7 @@ from src.auth.http_exceptions import (
 from src.exceptions import DomainException
 from src.http_exceptions import DetailedHTTPException
 from src.logging_config import create_logger
+from src.users.constants import ErrorCode
 from src.users.exceptions import AccountLocked as DomainAccountLocked
 from src.users.exceptions import EmailAlreadyExistsError
 from src.users.exceptions import EmailNotVerified as DomainEmailNotVerified

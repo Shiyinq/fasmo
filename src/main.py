@@ -5,10 +5,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 
 from src.api import router as api_router
 from src.config import config
@@ -24,6 +23,7 @@ from src.exception_handlers import (
 )
 from src.exceptions import DomainException
 from src.http_exceptions import BadRequest, DetailedHTTPException, EntityTooLarge
+from src.limiter import limiter
 from src.logging_config import request_id_ctx_var
 
 
@@ -35,11 +35,6 @@ async def lifespan(app: FastAPI):
 
     await database_instance.close()
 
-
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=[f"{config.default_requests_per_minute}/minute"],
-)
 
 app = FastAPI(
     title="Fasmo API",
