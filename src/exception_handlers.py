@@ -95,7 +95,6 @@ async def domain_exception_handler(request: Request, exc: DomainException):
     if isinstance(exc, AuthOperationError):
         return await detailed_http_exception_handler(request, AuthOperationFailed())
 
-
     if isinstance(exc, DomainAccountLocked):
         return await detailed_http_exception_handler(request, AccountLocked())
     if isinstance(exc, DomainEmailNotVerified):
