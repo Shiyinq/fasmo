@@ -58,7 +58,6 @@ app.add_exception_handler(DetailedHTTPException, detailed_http_exception_handler
 app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
 
 
-
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
