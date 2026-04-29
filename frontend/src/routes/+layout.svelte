@@ -2,10 +2,11 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { isAuthenticated, authStore, isInitialDataLoaded } from '$lib/stores';
 	import { locale, type Locale } from '$lib/i18n';
 	import ToastContainer from '$lib/components/common/ToastContainer.svelte';
+	import SEO from '$lib/components/common/SEO.svelte';
 
 	interface Props {
 		data: { locale: string };
@@ -29,20 +30,20 @@
 
 	// Check if the current page is public
 	let isPublicPage = $derived(
-		$page.url.pathname === '/' ||
-			$page.url.pathname === '/login' ||
-			$page.url.pathname === '/register' ||
-			$page.url.pathname === '/forgot-password' ||
-			$page.url.pathname === '/reset-password' ||
-			$page.url.pathname.startsWith('/auth/')
+		page.url.pathname === '/' ||
+			page.url.pathname === '/login' ||
+			page.url.pathname === '/register' ||
+			page.url.pathname === '/forgot-password' ||
+			page.url.pathname === '/reset-password' ||
+			page.url.pathname.startsWith('/auth/')
 	);
 
 	// Check if the current page is for guests only
 	let isGuestRoute = $derived(
-		$page.url.pathname === '/login' ||
-			$page.url.pathname === '/register' ||
-			$page.url.pathname === '/forgot-password' ||
-			$page.url.pathname === '/reset-password'
+		page.url.pathname === '/login' ||
+			page.url.pathname === '/register' ||
+			page.url.pathname === '/forgot-password' ||
+			page.url.pathname === '/reset-password'
 	);
 
 	// Fetch initial data (profile) if authenticated
@@ -72,9 +73,7 @@
 	});
 </script>
 
-<svelte:head>
-	<title>FASMO</title>
-</svelte:head>
+<SEO />
 
 <div class="min-h-screen flex flex-col relative overflow-x-hidden">
 	{#if !mounted}

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { fly } from 'svelte/transition';
 	import SEO from '$lib/components/common/SEO.svelte';
 	import { useTranslation } from '$lib/i18n/useTranslation';
@@ -52,7 +52,7 @@
 		}
 	}
 
-	let status = $derived($page.status);
+	let status = $derived(page.status);
 	let errorInfo = $derived(getErrorInfo(status));
 </script>
 
@@ -68,9 +68,9 @@
 		<p class="subtitle">{errorInfo.subtitle}</p>
 		<p class="description">{errorInfo.description}</p>
 
-		{#if $page.error?.message && $page.error.message !== errorInfo.subtitle}
+		{#if page.error?.message && page.error.message !== errorInfo.subtitle}
 			<div class="debug-info">
-				<code>{$page.error.message}</code>
+				<code>{page.error.message}</code>
 			</div>
 		{/if}
 
