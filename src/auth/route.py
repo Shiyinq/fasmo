@@ -5,8 +5,6 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_sso.sso.github import GithubSSO
 from fastapi_sso.sso.google import GoogleSSO
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from src.auth.constants import (
     REFRESH_TOKEN_COOKIE_KEY,
@@ -44,6 +42,7 @@ from src.dependencies import (
     get_settings,
     get_user_service,
 )
+from src.limiter import limiter
 from src.logging_config import create_logger
 from src.users.schemas import ProviderUserCreateRequest
 from src.users.service import UserService
@@ -106,7 +105,6 @@ def _set_access_token_cookie(response: Response, access_token: str, config: Sett
 
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
 
 logger = create_logger("auth", __name__)
 
@@ -354,7 +352,7 @@ async def logout(
 
 # Email Verification Endpoints
 @router.post("/auth/send-verification", response_model=EmailVerificationResponse)
-@limiter.limit(f"{config.auth_requests_per_minute}/minute")
+@limiter.limit(f"{config.auth_requests_per_minute}/minute", override_defaults=True)
 async def send_email_verification(
     request: Request,
     request_data: EmailVerificationRequest,
@@ -402,7 +400,7 @@ async def verify_email_endpoint(
 
 # Password Reset Endpoints
 @router.post("/auth/forgot-password", response_model=PasswordResetResponse)
-@limiter.limit(f"{config.auth_requests_per_minute}/minute")
+@limiter.limit(f"{config.auth_requests_per_minute}/minute", override_defaults=True)
 async def forgot_password(
     request: Request,
     request_data: PasswordResetRequest,
