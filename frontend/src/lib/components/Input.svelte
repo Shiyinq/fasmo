@@ -11,6 +11,7 @@
 		[key: string]: any;
 	}
 
+	// svelte-ignore custom_element_props_identifier
 	let {
 		label = '',
 		type = 'text',
@@ -49,48 +50,51 @@
 	.input-group {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		width: 100%;
 		margin-bottom: 1rem;
 	}
 
 	.input-label {
 		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-text-muted);
+		font-weight: 600;
+		color: var(--ghost-white, #f8f9fa);
 		transition: color 0.2s;
 	}
 
 	.input-field {
-		background: var(--color-bg);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		padding: 0.75rem 1rem;
-		color: var(--color-text-main);
-		transition: all var(--transition-fast);
-		outline: none;
+		width: 100%;
+		background: rgba(255, 255, 255, 0.03);
+		border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+		border-radius: 12px;
+		padding: 15px 20px;
+		color: var(--ghost-white, #f8f9fa);
+		font-family: var(--font-body, 'Inter', sans-serif);
 		font-size: 1rem;
+		transition: all 0.3s ease;
+		outline: none;
 	}
 
 	.input-field:focus {
-		border-color: var(--color-primary);
-		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+		border-color: var(--primary, #00f2ea);
+		box-shadow: 0 0 20px rgba(0, 242, 234, 0.1);
+		background: rgba(255, 255, 255, 0.05);
 	}
 
 	.input-field::placeholder {
-		color: #475569;
+		color: rgba(255, 255, 255, 0.25);
 	}
 
 	.has-error {
-		border-color: var(--color-error);
+		border-color: var(--error, #ff4d4d);
 	}
 	.has-error:focus {
-		box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+		box-shadow: 0 0 15px rgba(255, 77, 77, 0.15);
 	}
 
 	.error-msg {
 		font-size: 0.75rem;
-		color: var(--color-error);
+		color: var(--error, #ff4d4d);
 		margin-top: 0.25rem;
 		animation: slideDown 0.2s ease-out;
 	}

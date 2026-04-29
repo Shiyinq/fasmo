@@ -13,6 +13,7 @@
 		[key: string]: any;
 	}
 
+	// svelte-ignore custom_element_props_identifier
 	let {
 		type = 'button',
 		variant = 'primary',
@@ -28,7 +29,9 @@
 
 <button
 	{type}
-	class="btn btn-{variant} btn-{size} {full ? 'w-full' : ''} {loading ? 'loading' : ''} {rest.class || ''}"
+	class="btn btn-{variant} btn-{size} {full ? 'w-full' : ''} {loading
+		? 'loading'
+		: ''} {rest.class || ''}"
 	{disabled}
 	{onclick}
 	{...rest}
@@ -44,35 +47,37 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-md);
-		font-weight: 500;
-		transition: all var(--transition-fast);
+		border-radius: 12px;
+		font-weight: 700;
+		transition: all 0.3s ease;
 		gap: 0.75rem;
 		position: relative;
 		overflow: hidden;
 		border: none;
 		cursor: pointer;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
 	}
 
 	.btn-sm {
-		padding: 0.5rem 1rem;
-		font-size: 0.85rem;
+		padding: 0.5rem 1.25rem;
+		font-size: 0.8rem;
 	}
 
 	.btn-md {
-		padding: 0.75rem 1.5rem;
+		padding: 15px 20px;
 		font-size: 0.95rem;
 	}
 
 	.btn-lg {
-		padding: 1rem 2rem;
-		font-size: 1.1rem;
+		padding: 1.1rem 2rem;
+		font-size: 1rem;
 	}
 
 	.btn:disabled {
-		opacity: 0.7;
+		opacity: 0.6;
 		cursor: not-allowed;
-		filter: grayscale(0.5);
+		filter: grayscale(0.4);
 	}
 
 	.w-full {
@@ -82,58 +87,72 @@
 
 	/* Variants */
 	.btn-primary {
-		background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-		color: white;
-		box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+		background: linear-gradient(135deg, var(--primary, #00f2ea) 0%, #00c2bb 100%);
+		color: #ffffff;
+		font-weight: 800;
+	}
+	.btn-primary:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 10px 30px var(--primary-glow, rgba(0, 242, 234, 0.3));
 	}
 	.btn-primary:active {
 		transform: scale(0.98);
 	}
 
 	.btn-secondary {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		color: var(--color-text-main);
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+		color: var(--ghost-white, #f8f9fa);
+		font-weight: 600;
 	}
-	.btn-secondary:hover {
-		background: var(--color-surface-hover);
-		border-color: var(--color-text-muted);
+	.btn-secondary:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(255, 255, 255, 0.15);
 	}
 
 	.btn-outline {
 		background: transparent;
-		border: 1px solid var(--color-border);
-		color: var(--color-text-muted);
+		border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+		color: var(--ghost-white, #f8f9fa);
+		font-weight: 600;
 	}
-	.btn-outline:hover {
-		color: var(--color-text-main);
-		border-color: var(--color-text-main);
+	.btn-outline:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.05);
+		border-color: var(--primary, #00f2ea);
 	}
 
 	.btn-ghost {
 		background: transparent;
-		color: var(--color-text-muted);
+		color: var(--text-muted, rgba(248, 249, 250, 0.6));
+		font-weight: 500;
+		text-transform: none;
 	}
-	.btn-ghost:hover {
+	.btn-ghost:hover:not(:disabled) {
 		background: rgba(255, 255, 255, 0.05);
-		color: var(--color-text-main);
+		color: var(--ghost-white, #f8f9fa);
 	}
 
 	/* Social Buttons */
 	.btn-google {
 		background: white;
 		color: #1a1a1a;
+		text-transform: none;
+		font-weight: 600;
 	}
-	.btn-google:hover {
+	.btn-google:hover:not(:disabled) {
 		background: #f1f1f1;
+		transform: translateY(-2px);
 	}
 
 	.btn-github {
 		background: #24292e;
 		color: white;
+		text-transform: none;
+		font-weight: 600;
 	}
-	.btn-github:hover {
+	.btn-github:hover:not(:disabled) {
 		background: #2f363d;
+		transform: translateY(-2px);
 	}
 
 	/* Loading Spinner */

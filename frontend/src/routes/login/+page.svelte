@@ -5,6 +5,8 @@
 	import { useTranslation } from '$lib/i18n/useTranslation';
 	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
 	import SEO from '$lib/components/common/SEO.svelte';
+	import Input from '$lib/components/Input.svelte';
+	import Button from '$lib/components/Button.svelte';
 
 	const { t } = useTranslation();
 
@@ -72,29 +74,23 @@
 					</div>
 				{/if}
 
-				<div class="input-group">
-					<label for="username" class="visually-hidden">{t('auth.username_placeholder')}</label>
-					<input
-						id="username"
-						type="text"
-						placeholder={t('auth.username_placeholder')}
-						bind:value={username}
-						class="glass-input"
-						required
-					/>
-				</div>
+				<Input
+					id="username"
+					type="text"
+					placeholder={t('auth.username_placeholder')}
+					bind:value={username}
+					
+					required
+				/>
 
-				<div class="input-group">
-					<label for="password" class="visually-hidden">{t('common.password')}</label>
-					<input
-						id="password"
-						type="password"
-						placeholder={t('common.password')}
-						bind:value={password}
-						class="glass-input"
-						required
-					/>
-				</div>
+				<Input
+					id="password"
+					type="password"
+					placeholder={t('common.password')}
+					bind:value={password}
+					
+					required
+				/>
 
 				<div class="form-options">
 					<label class="checkbox-container">
@@ -105,13 +101,13 @@
 					<a href="/forgot-password" class="link-text">{t('auth.forgot_password')}</a>
 				</div>
 
-				<button type="submit" class="cta-button" disabled={loading}>
-					{#if loading}
-						<span class="loading-dots">{t('auth.logging_in')}</span>
-					{:else}
+				<Button type="submit" full {loading}>
+					{#if !loading}
 						{t('common.login').toUpperCase()}
+					{:else}
+						{t('auth.logging_in')}
 					{/if}
-				</button>
+				</Button>
 
 				<div class="divider">
 					<span>{t('auth.or_continue_with')}</span>
@@ -262,32 +258,6 @@
 		gap: 1.5rem; /* Increased from var(--space-md) */
 	}
 
-	.input-group {
-		position: relative;
-	}
-
-	.glass-input {
-		width: 100%;
-		background: rgba(255, 255, 255, 0.03);
-		border: 1px solid var(--glass-border);
-		border-radius: 12px;
-		padding: 16px 20px;
-		color: var(--ghost-white);
-		font-family: var(--font-body);
-		font-size: 1rem;
-		transition: all 0.3s var(--ease-smooth);
-	}
-
-	.glass-input:focus {
-		outline: none;
-		border-color: var(--primary);
-		box-shadow: 0 0 20px rgba(0, 242, 234, 0.1);
-		background: rgba(255, 255, 255, 0.05);
-	}
-
-	.glass-input::placeholder {
-		color: rgba(255, 255, 255, 0.2);
-	}
 
 	/* Form Options */
 	.form-options {
@@ -366,33 +336,6 @@
 		text-shadow: 0 0 10px var(--primary-glow);
 	}
 
-	/* CTA Button */
-	.cta-button {
-		width: 100%;
-		padding: 16px;
-		border-radius: 12px;
-		background: linear-gradient(135deg, var(--primary) 0%, #00c2bb 100%);
-		color: #ffffff; /* Changed from #000 */
-		font-weight: 800;
-		font-size: 1rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		transition: all 0.3s var(--ease-elastic);
-		position: relative;
-		overflow: hidden;
-		margin-top: 0.5rem;
-	}
-
-	.cta-button:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 30px var(--primary-glow);
-	}
-
-	.cta-button:disabled {
-		opacity: 0.7;
-		cursor: not-allowed;
-		filter: grayscale(1);
-	}
 
 	.divider {
 		display: flex;

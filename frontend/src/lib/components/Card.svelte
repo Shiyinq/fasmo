@@ -6,6 +6,7 @@
 		[key: string]: any;
 	}
 
+	// svelte-ignore custom_element_props_identifier
 	let { children, ...rest }: Props = $props();
 </script>
 
