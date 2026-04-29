@@ -1,18 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { auth } from '$lib/apis/auth';
-	import { apiKeys } from '$lib/apis/api_keys';
+	import { authStore, apiKeysStore, addToast } from '$lib/stores';
 	import type { User } from '$lib/types';
-	import { addToast } from '$lib/store/toast';
 	import { fade, fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import { useTranslation } from '$lib/i18n/useTranslation';
+	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
+	import SEO from '$lib/components/common/SEO.svelte';
+	import LoadingBar from '$lib/components/common/LoadingBar.svelte';
+	import EmptyState from '$lib/components/common/EmptyState.svelte';
+	import { copyToClipboard } from '$lib/utils/clipboard';
 
-	let user: User | null = null;
-	let currentApiKey = '';
-	let loading = true;
-	let apiError = '';
-	let hoveredKey = false;
-	let keyLoading = false;
+	const { t } = useTranslation();
+
+	let user = $state<User | null>(null);
+	let loading = $state(true);
+	let hoveredKey = $state(false);
+
+	// Derived states from store for cleaner UI
+	let currentApiKey = $derived(apiKeysStore.currentKey);
+	let keyLoading = $derived(apiKeysStore.isLoading);
 
 	onMount(() => {
 		loadData();
@@ -20,8 +27,8 @@
 
 	async function loadData() {
 		try {
-			user = await auth.getProfile();
-		} catch (e) {
+			user = await authStore.getProfile();
+		} catch (_e) {
 			user = null;
 			goto('/login');
 		} finally {
@@ -30,53 +37,39 @@
 	}
 
 	async function handleLogout() {
-		await auth.logout();
-		user = null;
-		window.location.href = '/';
+		await authStore.logout();
+		apiKeysStore.clear(); // Clear keys on logout
+		window.location.href = '/login';
 	}
 
 	async function generateApiKey() {
-		keyLoading = true;
-		apiError = '';
 		try {
-			const res = await apiKeys.create();
-			currentApiKey = res.apiKey;
-			addToast('API Key generated successfully.', 'success');
-		} catch (e: any) {
-			apiError = e.detail || 'Signal failure.';
-			addToast(apiError, 'error');
-		} finally {
-			keyLoading = false;
+			await apiKeysStore.create();
+			addToast(t('dashboard.gen_success'), 'success');
+		} catch (_e: any) {
+			addToast(apiKeysStore.error, 'error');
 		}
 	}
 
 	async function revokeApiKey() {
-		if (!confirm('Are you sure you want to sever the connection? This action cannot be undone.'))
-			return;
+		if (!confirm(t('dashboard.revoke_confirm'))) return;
 
-		keyLoading = true;
 		try {
-			await apiKeys.revoke();
-			currentApiKey = '';
-			addToast('API Key revoked.', 'info');
-		} catch (e: any) {
-			addToast(e.detail, 'error');
-		} finally {
-			keyLoading = false;
+			await apiKeysStore.revoke();
+			addToast(t('dashboard.revoked'), 'info');
+		} catch (_e: any) {
+			addToast(apiKeysStore.error, 'error');
 		}
-	}
-
-	function copyToClipboard(text: string) {
-		navigator.clipboard.writeText(text);
-		addToast('Copied to clipboard.', 'info');
 	}
 </script>
 
 <div class="page-container">
+	<SEO title="FASMO | {t('dashboard.title')}" />
 	{#if loading}
+		<LoadingBar />
 		<div class="loader-container" in:fade>
 			<div class="spinner"></div>
-			<p>Loading...</p>
+			<p>Initializing...</p>
 		</div>
 	{:else}
 		<div class="content" in:fly={{ y: 20, duration: 1000 }}>
@@ -84,10 +77,16 @@
 				<!-- DASHBOARD VIEW -->
 				<header class="dashboard-header">
 					<div class="header-text">
-						<h1>Dashboard</h1>
-						<p class="subtitle">System status: <span class="status-online">Active</span></p>
+						<h1>{t('dashboard.title')}</h1>
+						<p class="subtitle text-text-muted text-sm">
+							{t('dashboard.system_status')}:
+							<span class="status-online">{t('dashboard.active')}</span>
+						</p>
 					</div>
-					<button class="logout-btn" on:click={handleLogout}>Log Out</button>
+					<div class="header-actions flex items-center gap-4">
+						<LanguageSwitcher />
+						<button class="logout-btn" onclick={handleLogout}>{t('common.logout')}</button>
+					</div>
 				</header>
 
 				<div class="dashboard-grid">
@@ -113,9 +112,9 @@
 					<!-- API Key Card -->
 					<div class="glass-pane card api-card">
 						<div class="card-header">
-							<h3>API Access</h3>
+							<h3>{t('dashboard.api_access')}</h3>
 							<div class="status-badge {currentApiKey ? 'active' : 'inactive'}">
-								{currentApiKey ? 'Active' : 'Inactive'}
+								{currentApiKey ? t('dashboard.active_status') : t('dashboard.inactive_status')}
 							</div>
 						</div>
 
@@ -123,30 +122,38 @@
 							{#if currentApiKey}
 								<div
 									class="key-display"
-									on:mouseenter={() => (hoveredKey = true)}
-									on:mouseleave={() => (hoveredKey = false)}
+									onmouseenter={() => (hoveredKey = true)}
+									onmouseleave={() => (hoveredKey = false)}
 									role="group"
 								>
 									<div class="key-value" class:blurred={!hoveredKey}>
 										{currentApiKey}
 									</div>
 									<div class="key-actions">
-										<button class="icon-btn" on:click={() => copyToClipboard(currentApiKey)}
-											>Copy</button
+										<button
+											class="icon-btn"
+											onclick={() => copyToClipboard(currentApiKey, 'API Key')}
+											title={t('dashboard.copy')}
 										>
-										<button class="icon-btn danger" on:click={revokeApiKey} disabled={keyLoading}
-											>Revoke</button
+											{t('dashboard.copy')}
+										</button>
+										<button class="icon-btn danger" onclick={revokeApiKey} disabled={keyLoading}
+											>{t('dashboard.revoke')}</button
 										>
 									</div>
 								</div>
-								<p class="helper-text">Hover to view key. Keep it secret.</p>
+								<p class="helper-text">{t('dashboard.hover_to_view')}</p>
 							{:else}
-								<p class="empty-state">No active API key found.</p>
-								<button class="cta-button" on:click={generateApiKey} disabled={keyLoading}>
+								<EmptyState
+									title={t('dashboard.no_key')}
+									message="You don't have an active frequency key. Generate one to start transmission."
+									icon="<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='11' x='3' y='11' rx='2' ry='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg>"
+								/>
+								<button class="cta-button" onclick={generateApiKey} disabled={keyLoading}>
 									{#if keyLoading}
-										Generating...
+										{t('dashboard.generating')}
 									{:else}
-										Generate Key
+										{t('dashboard.generate_key')}
 									{/if}
 								</button>
 							{/if}
@@ -344,12 +351,6 @@
 		justify-content: center;
 	}
 
-	.empty-state {
-		color: var(--text-muted);
-		margin-bottom: var(--space-md);
-		text-align: center;
-	}
-
 	.key-display {
 		background: rgba(0, 0, 0, 0.3);
 		border-radius: 12px;
@@ -417,8 +418,8 @@
 		padding: 14px;
 		border-radius: 12px;
 		background: linear-gradient(135deg, var(--primary) 0%, #00c2bb 100%);
-		color: #000;
-		font-weight: 700;
+		color: #ffffff; /* Changed from #000 */
+		font-weight: 800;
 		text-transform: uppercase;
 		font-size: 0.9rem;
 		letter-spacing: 0.05em;

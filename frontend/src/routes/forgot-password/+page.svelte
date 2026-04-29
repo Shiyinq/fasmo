@@ -1,40 +1,44 @@
 <script lang="ts">
-	import { auth } from '$lib/apis/auth';
+	import { authStore } from '$lib/stores';
 	import { fade, fly } from 'svelte/transition';
+	import { useTranslation } from '$lib/i18n/useTranslation';
+	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
 
-	let email = '';
-	let loading = false;
-	let error = '';
-	let success = false;
+	const { t } = useTranslation();
+
+	let email = $state('');
+	// Using global store states (SDD)
+	let loading = $derived(authStore.isLoading);
+	let error = $derived(authStore.error);
+	let success = $state(false);
 
 	async function handleSubmit() {
-		loading = true;
-		error = '';
-		success = false;
-
 		try {
-			await auth.forgotPassword({ email });
+			await authStore.forgotPassword({ email });
 			success = true;
 		} catch (e: any) {
-			error = e.detail || 'Transmission failed.';
-		} finally {
-			loading = false;
+			console.error(e);
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>FASMO | Recovery</title>
-	<meta name="description" content="Recover lost access credentials." />
+	<title>FASMO | {t('auth.forgot_password')}</title>
 </svelte:head>
 
 <div class="page-container">
+	<div class="top-actions">
+		<LanguageSwitcher />
+	</div>
+
 	<div class="content">
 		<!-- Visual Section -->
 		<div class="visual-pane" in:fly={{ y: 20, duration: 1000, delay: 200 }}>
 			<div class="header-section">
 				<h1>RECOVERY</h1>
-				<p class="subtitle">Lost your key? <br />Initiate recovery protocol.</p>
+				<p class="subtitle">
+					{t('auth.forgot_password_subtitle') || 'Lost your key? Initiate recovery protocol.'}
+				</p>
 			</div>
 
 			<div class="asset-wrapper">
@@ -61,15 +65,15 @@
 							/>
 						</svg>
 					</div>
-					<h2>Check your inbox</h2>
+					<h2>{t('auth.check_inbox')}</h2>
 					<p class="success-desc">
-						We have sent a password recovery instruction to <strong>{email}</strong>.
+						{t('auth.recovery_sent')} <strong>{email}</strong>.
 					</p>
 
-					<a href="/login" class="cta-button secondary">Back to Login</a>
+					<a href="/login" class="cta-button secondary">{t('auth.back_to_login')}</a>
 				</div>
 			{:else}
-				<form on:submit|preventDefault={handleSubmit} class="recovery-form">
+				<form onsubmit={handleSubmit} class="recovery-form">
 					{#if error}
 						<div class="error-banner" transition:fade>
 							<span class="error-icon">!</span>
@@ -78,12 +82,12 @@
 					{/if}
 
 					<div class="input-group">
-						<label for="email" class="input-label">Email Address</label>
-						<p class="helper-text">We'll send you a link to reset your password.</p>
+						<label for="email" class="input-label">{t('common.email')}</label>
+						<p class="helper-text">{t('auth.recovery_helper')}</p>
 						<input
 							id="email"
 							type="email"
-							placeholder="Enter your registered email"
+							placeholder={t('common.email')}
 							bind:value={email}
 							class="glass-input"
 							required
@@ -92,13 +96,13 @@
 
 					<button type="submit" class="cta-button" disabled={loading}>
 						{#if loading}
-							Sending Signal...
+							<span class="loading-dots">{t('common.loading')}</span>
 						{:else}
-							SEND RESET LINK
+							{t('auth.send_reset_link').toUpperCase()}
 						{/if}
 					</button>
 
-					<a href="/login" class="back-link"> ← Back to Login </a>
+					<a href="/login" class="back-link"> ← {t('auth.back_to_login')} </a>
 				</form>
 			{/if}
 		</div>
@@ -113,6 +117,13 @@
 		justify-content: center;
 		padding: var(--space-lg);
 		position: relative;
+	}
+
+	.top-actions {
+		position: absolute;
+		top: 1.5rem;
+		right: 1.5rem;
+		z-index: 100;
 	}
 
 	.content {
@@ -143,7 +154,10 @@
 		font-size: clamp(3rem, 6vw, 5rem);
 		line-height: 0.9;
 		margin-bottom: var(--space-md);
-		color: var(--ghost-white);
+		background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
 	}
 
 	.subtitle {
@@ -201,7 +215,7 @@
 	.recovery-form {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-lg);
+		gap: 1.5rem;
 	}
 
 	.input-group {
@@ -246,8 +260,8 @@
 		padding: 16px;
 		border-radius: 12px;
 		background: linear-gradient(135deg, var(--warning) 0%, #ff8800 100%);
-		color: #000;
-		font-weight: 700;
+		color: #ffffff;
+		font-weight: 800;
 		font-size: 1rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -282,6 +296,7 @@
 		color: var(--text-muted);
 		font-size: 0.9rem;
 		transition: color 0.2s;
+		margin-top: 0.5rem;
 	}
 
 	.back-link:hover {
@@ -294,7 +309,7 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: var(--space-md);
+		gap: 1.5rem;
 	}
 
 	.success-icon {
@@ -306,7 +321,7 @@
 		align-items: center;
 		justify-content: center;
 		color: var(--success);
-		margin-bottom: var(--space-sm);
+		margin-bottom: 0.5rem;
 	}
 
 	.check-svg {
@@ -317,7 +332,7 @@
 	.success-desc {
 		font-size: 1rem;
 		color: var(--text-muted);
-		margin-bottom: var(--space-md);
+		margin-bottom: 1rem;
 	}
 
 	.error-banner {

@@ -52,11 +52,7 @@
 			</div>
 
 			<div class="asset-wrapper">
-				<img
-					src="/assets/background/login.png"
-					alt="Verification"
-					class="accent-asset {status}"
-				/>
+				<img src="/assets/background/login.png" alt="Verification" class="accent-asset {status}" />
 			</div>
 		</div>
 
@@ -90,9 +86,7 @@
 					<p class="status-desc">
 						Your email has been successfully verified. You now have full access to FASMO.
 					</p>
-					<a href="/login" class="cta-button">
-						PROCEED TO LOGIN
-					</a>
+					<a href="/login" class="cta-button"> PROCEED TO LOGIN </a>
 				</div>
 			{:else}
 				<div class="status-container error" in:scale={{ duration: 500, delay: 200 }}>
@@ -112,9 +106,7 @@
 						{errorMessage}
 					</p>
 					<div class="action-buttons">
-						<a href="/login" class="secondary-button">
-							Back to Login
-						</a>
+						<a href="/login" class="secondary-button"> Back to Login </a>
 					</div>
 				</div>
 			{/if}
@@ -221,7 +213,8 @@
 	}
 
 	@keyframes pulse-glow {
-		0%, 100% {
+		0%,
+		100% {
 			filter: drop-shadow(0 0 40px var(--primary-glow));
 			opacity: 0.6;
 		}
@@ -333,7 +326,8 @@
 	}
 
 	@keyframes dot-pulse {
-		0%, 100% {
+		0%,
+		100% {
 			transform: scale(1);
 			box-shadow: 0 0 20px var(--primary-glow);
 		}

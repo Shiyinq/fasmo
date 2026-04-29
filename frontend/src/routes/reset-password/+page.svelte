@@ -1,26 +1,30 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { auth } from '$lib/apis/auth';
-	import { addToast } from '$lib/store/toast';
+	import { authStore } from '$lib/stores';
+	import { addToast } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
+	import { useTranslation } from '$lib/i18n/useTranslation';
 
-	let newPassword = '';
-	let confirmPassword = '';
-	let loading = false;
-	let error = '';
-	let success = false;
-	let token = '';
-	let showPassword = false;
+	const { t } = useTranslation();
+
+	let newPassword = $state('');
+	let confirmPassword = $state('');
+	// Using global store states (SDD)
+	let loading = $derived(authStore.isLoading);
+	let error = $derived(authStore.error);
+	let success = $state(false);
+	let token = $state('');
+	let showPassword = $state(false);
 
 	// Requirements Checklist
-	let reqLength = false; // > 7
-	let reqNumber = false; // 0-9
-	let reqSpecial = false; // !@#...
-	let reqMatch = false; // match
+	let reqLength = $derived(newPassword.length > 7);
+	let reqNumber = $derived(/[0-9]/.test(newPassword));
+	let reqSpecial = $derived(/[^A-Za-z0-9]/.test(newPassword));
+	let reqMatch = $derived(newPassword.length > 0 && newPassword === confirmPassword);
 
 	// Password Strength
-	$: passwordStrength = calculateStrength(newPassword);
+	let passwordStrength = $derived(calculateStrength(newPassword));
 
 	function calculateStrength(pw: string) {
 		if (!pw) return 0;
@@ -45,14 +49,7 @@
 		return 'var(--success)';
 	}
 
-	$: {
-		reqLength = newPassword.length > 7;
-		reqNumber = /[0-9]/.test(newPassword);
-		reqSpecial = /[^A-Za-z0-9]/.test(newPassword);
-		reqMatch = newPassword.length > 0 && newPassword === confirmPassword;
-	}
-
-	$: allValid = reqLength && reqNumber && reqSpecial && reqMatch;
+	let allValid = $derived(reqLength && reqNumber && reqSpecial && reqMatch);
 
 	onMount(() => {
 		token = $page.url.searchParams.get('token') || '';
@@ -72,11 +69,8 @@
 			return;
 		}
 
-		loading = true;
-		error = '';
-
 		try {
-			await auth.resetPassword({
+			await authStore.resetPassword({
 				token,
 				new_password: newPassword,
 				confirm_password: confirmPassword
@@ -86,17 +80,15 @@
 			setTimeout(() => {
 				window.location.href = '/login';
 			}, 2000);
-		} catch (e: any) {
-			error = e.detail || 'Reset failure.';
-			addToast(error, 'error');
-		} finally {
-			loading = false;
+		} catch (e: unknown) {
+			console.error(e);
+			addToast(authStore.error, 'error');
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>FASMO | Reset Credentials</title>
+	<title>FASMO | {t('auth.reset_password')}</title>
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
@@ -106,7 +98,7 @@
 		<div class="visual-pane" in:fly={{ y: 20, duration: 1000, delay: 200 }}>
 			<div class="header-section">
 				<h1>SECURE</h1>
-				<p class="subtitle">Update your credentials. <br />Lock the gateway.</p>
+				<p class="subtitle">{t('auth.reset_password_subtitle')}</p>
 			</div>
 
 			<div class="asset-wrapper">
@@ -133,13 +125,19 @@
 							/>
 						</svg>
 					</div>
-					<h2>Password Reset</h2>
+					<h2>{t('auth.reset_password')}</h2>
 					<p class="success-desc">
-						Your password has been updated successfully. Redirecting you to login...
+						{t('auth.reset_success')}
 					</p>
 				</div>
 			{:else}
-				<form on:submit|preventDefault={handleSubmit} class="reset-form">
+				<form
+					onsubmit={(e) => {
+						e.preventDefault();
+						handleSubmit();
+					}}
+					class="reset-form"
+				>
 					{#if error}
 						<div class="error-banner" transition:fade>
 							<span class="error-icon">!</span>
@@ -149,13 +147,13 @@
 
 					<div class="input-group">
 						<div class="label-row">
-							<label for="new-password" class="input-label">New Password</label>
+							<label for="new-password" class="input-label">{t('auth.new_password')}</label>
 							<button
 								type="button"
 								class="toggle-btn"
-								on:click={() => (showPassword = !showPassword)}
+								onclick={() => (showPassword = !showPassword)}
 							>
-								{showPassword ? 'Hide' : 'Show'}
+								{showPassword ? t('common.cancel') : t('common.save')}
 							</button>
 						</div>
 						<div class="input-wrapper">
@@ -172,7 +170,7 @@
 								<input
 									id="new-password"
 									type="password"
-									placeholder="New secure password"
+									placeholder={t('auth.new_password')}
 									bind:value={newPassword}
 									class="glass-input"
 									required
@@ -217,7 +215,7 @@
 					{/if}
 
 					<div class="input-group">
-						<label for="confirm-password" class="input-label">Confirm Password</label>
+						<label for="confirm-password" class="input-label">{t('auth.confirm_password')}</label>
 						<div class="input-wrapper">
 							{#if showPassword}
 								<input
@@ -232,7 +230,7 @@
 								<input
 									id="confirm-password"
 									type="password"
-									placeholder="Confirm new password"
+									placeholder={t('auth.confirm_password')}
 									bind:value={confirmPassword}
 									class="glass-input {reqMatch && confirmPassword ? 'valid' : ''}"
 									required
@@ -248,32 +246,32 @@
 					<div class="checklist" transition:slide>
 						<div class="check-item {reqLength ? 'met' : ''}">
 							<span class="icon">{reqLength ? '✓' : '○'}</span>
-							At least 8 characters
+							{t('auth.req_length')}
 						</div>
 						<div class="check-item {reqNumber ? 'met' : ''}">
 							<span class="icon">{reqNumber ? '✓' : '○'}</span>
-							Contains a number
+							{t('auth.req_number')}
 						</div>
 						<div class="check-item {reqSpecial ? 'met' : ''}">
 							<span class="icon">{reqSpecial ? '✓' : '○'}</span>
-							Contains special char
+							{t('auth.req_special')}
 						</div>
 						<div class="check-item {reqMatch ? 'met' : ''}">
 							<span class="icon">{reqMatch ? '✓' : '○'}</span>
-							Passwords match
+							{t('auth.req_match')}
 						</div>
 					</div>
 
 					<div class="actions">
 						<button type="submit" class="cta-button" disabled={loading || !allValid}>
 							{#if loading}
-								Updating...
+								{t('auth.resetting')}
 							{:else}
-								RESET PASSWORD
+								{t('auth.reset_password').toUpperCase()}
 							{/if}
 						</button>
 
-						<a href="/login" class="cancel-link">Cancel</a>
+						<a href="/login" class="cancel-link">{t('common.cancel')}</a>
 					</div>
 				</form>
 			{/if}

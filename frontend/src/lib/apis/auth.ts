@@ -1,4 +1,5 @@
-import { client, API_BASE } from './client';
+import { client } from './client';
+import { API_BASE } from '$lib/constants';
 import type {
 	LoginRequest,
 	RegisterRequest,
@@ -43,7 +44,7 @@ export const auth = {
 		}
 
 		// Import store dynamically or at top level to update it
-		const { accessToken } = await import('$lib/store/auth');
+		const { accessToken } = await import('$lib/stores/accessToken.svelte');
 		accessToken.set(data.access_token);
 
 		return data as AuthResponse;
