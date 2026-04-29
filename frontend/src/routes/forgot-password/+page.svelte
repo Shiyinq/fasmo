@@ -91,7 +91,6 @@
 						label={t('common.email')}
 						placeholder={t('common.email')}
 						bind:value={email}
-						
 						required
 					/>
 

@@ -64,7 +64,23 @@
 		"recovery_sent": "We have sent a password recovery instruction to",
 		"back_to_login": "Back to Login",
 		"recovery_helper": "We'll send you a link to reset your password.",
-		"send_reset_link": "Send Reset Link"
+		"send_reset_link": "Send Reset Link",
+		"verify_email": {
+			"title": "Email Verification",
+			"verifying": "VERIFYING",
+			"verifying_subtitle": "Confirming your signal. \nPlease wait...",
+			"verified": "VERIFIED",
+			"verified_subtitle": "Connection established. \nYou're in the system.",
+			"failed": "FAILED",
+			"failed_subtitle": "Signal lost. \nVerification unsuccessful.",
+			"status_verifying": "Verifying Email",
+			"status_verifying_desc": "Please wait while we confirm your identity...",
+			"status_success": "Email Verified!",
+			"status_success_desc": "Your email has been successfully verified. You now have full access to FASMO.",
+			"status_error": "Verification Failed",
+			"proceed_to_login": "PROCEED TO LOGIN",
+			"no_token": "No verification token provided."
+		}
 	},
 	"dashboard": {
 		"title": "Dashboard",

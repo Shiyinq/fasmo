@@ -12,7 +12,9 @@
 			const data = await auth.refresh();
 			accessToken.set(data.access_token);
 		} catch (error) {
-			logger.error('Failed to refresh token after OAuth callback', error, { context: 'auth/callback' });
+			logger.error('Failed to refresh token after OAuth callback', error, {
+				context: 'auth/callback'
+			});
 		}
 
 		// Redirect to home

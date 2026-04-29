@@ -1,38 +1,41 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { auth } from '$lib/apis/auth';
+	import { authStore } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { fade, fly, scale } from 'svelte/transition';
+	import { useTranslation } from '$lib/i18n/useTranslation';
+	import SEO from '$lib/components/common/SEO.svelte';
+
+	const { t } = useTranslation();
 
 	type VerificationStatus = 'verifying' | 'success' | 'error';
 
-	let status: VerificationStatus = 'verifying';
-	let errorMessage = '';
+	let status = $state<VerificationStatus>('verifying');
+	let localError = $state('');
+	let errorMessage = $derived(localError || authStore.error);
 
 	onMount(async () => {
 		const token = page.url.searchParams.get('token');
 
 		if (!token) {
 			status = 'error';
-			errorMessage = 'No verification token provided.';
+			localError = t('auth.verify_email.no_token');
 			return;
 		}
 
 		try {
-			await auth.verifyEmail({ token });
+			await authStore.verifyEmail({ token });
 			status = 'success';
-		} catch (e: any) {
+		} catch (_e: any) {
 			status = 'error';
-			errorMessage = e.detail || 'Verification failed. Token may be invalid or expired.';
 		}
 	});
 </script>
 
-<svelte:head>
-	<title>FASMO | Email Verification</title>
-	<meta name="description" content="Verify your email address for FASMO." />
-	<meta name="robots" content="noindex, nofollow" />
-</svelte:head>
+<SEO
+	title="FASMO | {t('auth.verify_email.title')}"
+	description="Verify your email address for FASMO."
+/>
 
 <div class="page-container">
 	<div class="content" in:fly={{ y: 50, duration: 800 }}>
@@ -40,14 +43,14 @@
 		<div class="visual-pane">
 			<div class="header-section">
 				{#if status === 'verifying'}
-					<h1 in:fade>VERIFYING</h1>
-					<p class="subtitle">Confirming your signal. <br />Please wait...</p>
+					<h1 in:fade>{t('auth.verify_email.verifying')}</h1>
+					<p class="subtitle">{t('auth.verify_email.verifying_subtitle')}</p>
 				{:else if status === 'success'}
-					<h1 in:fade>VERIFIED</h1>
-					<p class="subtitle success">Connection established. <br />You're in the system.</p>
+					<h1 in:fade>{t('auth.verify_email.verified')}</h1>
+					<p class="subtitle success">{t('auth.verify_email.verified_subtitle')}</p>
 				{:else}
-					<h1 in:fade>FAILED</h1>
-					<p class="subtitle error">Signal lost. <br />Verification unsuccessful.</p>
+					<h1 in:fade>{t('auth.verify_email.failed')}</h1>
+					<p class="subtitle error">{t('auth.verify_email.failed_subtitle')}</p>
 				{/if}
 			</div>
 
@@ -66,8 +69,8 @@
 						<div class="pulse-ring delay-2"></div>
 						<div class="center-dot"></div>
 					</div>
-					<h2 class="status-title">Verifying Email</h2>
-					<p class="status-desc">Please wait while we confirm your identity...</p>
+					<h2 class="status-title">{t('auth.verify_email.status_verifying')}</h2>
+					<p class="status-desc">{t('auth.verify_email.status_verifying_desc')}</p>
 				</div>
 			{:else if status === 'success'}
 				<div class="status-container success" in:scale={{ duration: 500, delay: 200 }}>
@@ -82,11 +85,11 @@
 							/>
 						</svg>
 					</div>
-					<h2 class="status-title">Email Verified!</h2>
+					<h2 class="status-title">{t('auth.verify_email.status_success')}</h2>
 					<p class="status-desc">
-						Your email has been successfully verified. You now have full access to FASMO.
+						{t('auth.verify_email.status_success_desc')}
 					</p>
-					<a href="/login" class="cta-button"> PROCEED TO LOGIN </a>
+					<a href="/login" class="cta-button"> {t('auth.verify_email.proceed_to_login')} </a>
 				</div>
 			{:else}
 				<div class="status-container error" in:scale={{ duration: 500, delay: 200 }}>
@@ -101,12 +104,12 @@
 							/>
 						</svg>
 					</div>
-					<h2 class="status-title">Verification Failed</h2>
+					<h2 class="status-title">{t('auth.verify_email.status_error')}</h2>
 					<p class="status-desc">
 						{errorMessage}
 					</p>
 					<div class="action-buttons">
-						<a href="/login" class="secondary-button"> Back to Login </a>
+						<a href="/login" class="secondary-button"> {t('auth.back_to_login')} </a>
 					</div>
 				</div>
 			{/if}
@@ -165,6 +168,7 @@
 		border-left: 2px solid var(--primary);
 		padding-left: var(--space-md);
 		transition: border-color 0.5s ease;
+		white-space: pre-line;
 	}
 
 	.subtitle.success {
