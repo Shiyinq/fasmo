@@ -224,9 +224,19 @@
 
 			<Tabs.Root bind:value={activeTab} class="space-y-4">
 				<Tabs.List>
-					<Tabs.Trigger value="overview">{t('common.overview')}</Tabs.Trigger>
-					<Tabs.Trigger value="api-access">{t('dashboard.api_access')}</Tabs.Trigger>
-					<Tabs.Trigger value="settings" disabled>{t('common.settings')}</Tabs.Trigger>
+					<Tabs.Trigger value="overview" class="data-[state=active]:text-primary font-semibold">
+						{t('common.overview')}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="api-access" class="data-[state=active]:text-primary font-semibold">
+						{t('dashboard.api_access')}
+					</Tabs.Trigger>
+					<Tabs.Trigger
+						value="settings"
+						disabled
+						class="data-[state=active]:text-primary font-semibold"
+					>
+						{t('common.settings')}
+					</Tabs.Trigger>
 				</Tabs.List>
 
 				<Tabs.Content value="overview" class="space-y-4">
