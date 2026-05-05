@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Ticket } from 'lucide-svelte';
+	import { Activity } from 'lucide-svelte';
 </script>
 
-<div class="min-h-screen flex flex-col items-center justify-center animate-fade-in">
+<div
+	class="fixed inset-0 bg-background flex flex-col items-center justify-center z-[100] animate-in fade-in duration-500"
+>
 	<div
-		class="w-20 h-20 rounded-full idol-gradient flex items-center justify-center text-white shadow-xl mb-6 ring-4 ring-white/50 dark:ring-white/10 animate-pulse"
+		class="w-20 h-20 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-xl mb-6 ring-8 ring-primary/10 animate-pulse"
 	>
-		<Ticket class="w-10 h-10" />
+		<Activity class="w-10 h-10" />
 	</div>
-	<h1 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-		Fasmo
-	</h1>
+	<h1 class="text-3xl font-black tracking-tighter text-foreground uppercase italic">Fasmo</h1>
 </div>

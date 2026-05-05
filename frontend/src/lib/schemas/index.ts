@@ -26,6 +26,7 @@ export const apiKeyResponseSchema = z.object({
 
 export const userProfileSchema = z.object({
 	id: z.number().optional(),
+	userId: z.string(),
 	name: z.string(),
 	username: z.string(),
 	email: z.string().email()

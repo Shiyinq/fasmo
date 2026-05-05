@@ -1,13 +1,13 @@
 <script lang="ts">
-	import Button from './Button.svelte';
-	import { portal } from '$lib/actions/portal';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 
 	interface Props {
 		title?: string;
 		message?: string;
 		confirmText?: string;
 		cancelText?: string;
-		confirmVariant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'google' | 'github';
+		confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 		onconfirm?: () => void;
 		oncancel?: () => void;
 	}
@@ -17,95 +17,30 @@
 		message = 'Are you sure you want to proceed?',
 		confirmText = 'Confirm',
 		cancelText = 'Cancel',
-		confirmVariant = 'primary',
+		confirmVariant = 'default',
 		onconfirm,
 		oncancel
 	}: Props = $props();
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' && oncancel) {
+	function handleOpenChange(open: boolean) {
+		if (!open && oncancel) {
 			oncancel();
 		}
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<div class="modal-backdrop" use:portal onclick={oncancel} role="presentation">
-	<div class="modal-content glass-panel" onclick={(e) => e.stopPropagation()} role="presentation">
-		<h3 class="modal-title">{title}</h3>
-		<p class="modal-message">{message}</p>
-
-		<div class="modal-actions">
-			<Button variant="ghost" onclick={oncancel}>{cancelText}</Button>
-			<Button variant={confirmVariant} onclick={onconfirm}>{confirmText}</Button>
-		</div>
-	</div>
-</div>
-
-<style>
-	.modal-backdrop {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(4px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 10000;
-		animation: fadeIn 0.2s ease-out;
-	}
-
-	.modal-content {
-		width: 90%;
-		max-width: 400px;
-		padding: 1.5rem;
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		box-shadow: var(--shadow-lg);
-		border-radius: var(--radius-lg);
-		animation: slideUp 0.2s ease-out;
-	}
-
-	.modal-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin-bottom: 0.75rem;
-		color: var(--color-text-main);
-	}
-
-	.modal-message {
-		color: var(--color-text-muted);
-		margin-bottom: 1.5rem;
-		line-height: 1.5;
-	}
-
-	.modal-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.75rem;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-
-	@keyframes slideUp {
-		from {
-			transform: translateY(20px);
-			opacity: 0;
-		}
-		to {
-			transform: translateY(0);
-			opacity: 1;
-		}
-	}
-</style>
+<Dialog.Root open={true} onOpenChange={handleOpenChange}>
+	<Dialog.Portal>
+		<Dialog.Overlay />
+		<Dialog.Content class="sm:max-w-[425px]">
+			<Dialog.Header>
+				<Dialog.Title>{title}</Dialog.Title>
+				<Dialog.Description>{message}</Dialog.Description>
+			</Dialog.Header>
+			<Dialog.Footer class="gap-2 sm:gap-0">
+				<Button variant="ghost" onclick={oncancel}>{cancelText}</Button>
+				<Button variant={confirmVariant} onclick={onconfirm}>{confirmText}</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
