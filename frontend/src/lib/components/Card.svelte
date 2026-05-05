@@ -1,5 +1,17 @@
-<div class="card glass-panel">
-	<slot />
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+
+	interface Props {
+		children?: Snippet;
+		[key: string]: any;
+	}
+
+	// svelte-ignore custom_element_props_identifier
+	let { children, ...rest }: Props = $props();
+</script>
+
+<div class="card glass-panel {rest.class || ''}" {...rest}>
+	{@render children?.()}
 </div>
 
 <style>

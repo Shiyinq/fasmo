@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { accessToken } from '$lib/store/auth';
+	import { accessToken } from '$lib/stores/accessToken.svelte';
 	import { auth } from '$lib/apis/auth';
+	import { logger } from '$lib/utils/logger';
 
 	onMount(async () => {
 		try {
@@ -11,7 +12,9 @@
 			const data = await auth.refresh();
 			accessToken.set(data.access_token);
 		} catch (error) {
-			console.error('Failed to refresh token:', error);
+			logger.error('Failed to refresh token after OAuth callback', error, {
+				context: 'auth/callback'
+			});
 		}
 
 		// Redirect to home

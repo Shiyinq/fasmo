@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from pydantic import SecretStr, computed_field
+from pydantic import SecretStr, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -44,9 +44,28 @@ class Settings(BaseSettings):
     DB_MAX_POOL_SIZE: int = 50
     MAX_UPLOAD_SIZE_BYTES: int = 1_048_576  # 1 MB
 
+    API_BASE_URL: str = "http://localhost:8080/api"
+    COOKIE_DOMAIN: Optional[str] = None
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=True
     )
+
+    @field_validator("FRONTEND_URL", "API_BASE_URL")
+    @classmethod
+    def validate_prod_urls(cls, v: str, info):
+        return v
+
+    @model_validator(mode="after")
+    def validate_production_hardening(self) -> "Settings":
+        if self.ENV == "prod":
+            for field in ["FRONTEND_URL", "API_BASE_URL"]:
+                val = getattr(self, field)
+                if "localhost" in val or "127.0.0.1" in val:
+                    raise ValueError(
+                        f"{field} cannot contain 'localhost' or '127.0.0.1' in production. Value was: {val}"
+                    )
+        return self
 
     @property
     def is_env_dev(self) -> bool:
@@ -211,6 +230,11 @@ class Settings(BaseSettings):
     @property
     def max_upload_size_bytes(self) -> int:
         return self.MAX_UPLOAD_SIZE_BYTES
+
+
+    @property
+    def cookie_domain(self) -> Optional[str]:
+        return self.COOKIE_DOMAIN
 
 
 config = Settings()

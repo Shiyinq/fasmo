@@ -1,18 +1,56 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { auth } from '$lib/apis/auth';
-	import { apiKeys } from '$lib/apis/api_keys';
+	import { authStore, apiKeysStore, addToast } from '$lib/stores';
 	import type { User } from '$lib/types';
-	import { addToast } from '$lib/store/toast';
-	import { fade, fly } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import { goto } from '$app/navigation';
+	import { useTranslation } from '$lib/i18n/useTranslation';
+	import LanguageSwitcher from '$lib/components/common/LanguageSwitcher.svelte';
+	import ThemeToggle from '$lib/components/common/ThemeToggle.svelte';
+	import SEO from '$lib/components/common/SEO.svelte';
+	import EmptyState from '$lib/components/common/EmptyState.svelte';
+	import { copyToClipboard } from '$lib/utils/clipboard';
+	import {
+		Card,
+		CardHeader,
+		CardTitle,
+		CardContent,
+		CardDescription
+	} from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Avatar from '$lib/components/ui/avatar';
+	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Alert from '$lib/components/ui/alert';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Separator } from '$lib/components/ui/separator';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
+	import {
+		Key,
+		Copy,
+		Trash2,
+		ShieldAlert,
+		Loader2,
+		LayoutDashboard,
+		Activity,
+		ShieldCheck,
+		Zap,
+		LogOut,
+		ExternalLink
+	} from 'lucide-svelte';
 
-	let user: User | null = null;
-	let currentApiKey = '';
-	let loading = true;
-	let apiError = '';
-	let hoveredKey = false;
-	let keyLoading = false;
+	const { t } = useTranslation();
+
+	let user = $state<User | null>(null);
+	let activeTab = $state('overview');
+	let loading = $derived(authStore.isLoading);
+	let hoveredKey = $state(false);
+	let isRevokeDialogOpen = $state(false);
+
+	let currentApiKey = $derived(apiKeysStore.currentKey);
+	let keyLoading = $derived(apiKeysStore.isLoading);
 
 	onMount(() => {
 		loadData();
@@ -20,416 +58,460 @@
 
 	async function loadData() {
 		try {
-			user = await auth.getProfile();
-		} catch (e) {
+			user = await authStore.getProfile();
+		} catch (_e) {
 			user = null;
 			goto('/login');
-		} finally {
-			loading = false;
 		}
 	}
 
 	async function handleLogout() {
-		await auth.logout();
-		user = null;
-		window.location.href = '/';
+		await authStore.logout();
+		apiKeysStore.clear();
+		window.location.href = '/login';
 	}
 
 	async function generateApiKey() {
-		keyLoading = true;
-		apiError = '';
 		try {
-			const res = await apiKeys.create();
-			currentApiKey = res.apiKey;
-			addToast('API Key generated successfully.', 'success');
-		} catch (e: any) {
-			apiError = e.detail || 'Signal failure.';
-			addToast(apiError, 'error');
-		} finally {
-			keyLoading = false;
+			await apiKeysStore.create();
+			addToast(t('dashboard.gen_success'), 'success');
+		} catch (_e: any) {
+			addToast(apiKeysStore.error, 'error');
 		}
 	}
 
 	async function revokeApiKey() {
-		if (!confirm('Are you sure you want to sever the connection? This action cannot be undone.'))
-			return;
-
-		keyLoading = true;
+		isRevokeDialogOpen = false;
 		try {
-			await apiKeys.revoke();
-			currentApiKey = '';
-			addToast('API Key revoked.', 'info');
-		} catch (e: any) {
-			addToast(e.detail, 'error');
-		} finally {
-			keyLoading = false;
+			await apiKeysStore.revoke();
+			addToast(t('dashboard.revoked'), 'info');
+		} catch (_e: any) {
+			addToast(apiKeysStore.error, 'error');
 		}
 	}
 
-	function copyToClipboard(text: string) {
-		navigator.clipboard.writeText(text);
-		addToast('Copied to clipboard.', 'info');
+	function getInitials(name: string) {
+		return name
+			.split(' ')
+			.map((n) => n[0])
+			.join('')
+			.toUpperCase()
+			.substring(0, 2);
 	}
 </script>
 
-<div class="page-container">
-	{#if loading}
-		<div class="loader-container" in:fade>
-			<div class="spinner"></div>
-			<p>Loading...</p>
-		</div>
-	{:else}
-		<div class="content" in:fly={{ y: 20, duration: 1000 }}>
-			{#if user}
-				<!-- DASHBOARD VIEW -->
-				<header class="dashboard-header">
-					<div class="header-text">
-						<h1>Dashboard</h1>
-						<p class="subtitle">System status: <span class="status-online">Active</span></p>
-					</div>
-					<button class="logout-btn" on:click={handleLogout}>Log Out</button>
-				</header>
+<SEO title="FASMO | {t('dashboard.title')}" />
 
-				<div class="dashboard-grid">
-					<!-- Profile Card -->
-					<div class="glass-pane card profile-card">
-						<div class="card-icon">
-							<svg viewBox="0 0 24 24" fill="none" class="icon-svg">
-								<path
-									d="M20 21C20 19.6044 20 18.9067 19.8278 18.3389C19.44 17.0605 18.4395 16.06 17.1611 15.6722C16.5933 15.5 15.8956 15.5 14.5 15.5H9.5C8.10444 15.5 7.40665 15.5 6.83886 15.6722C5.56045 16.06 4.56004 17.0605 4.17224 18.3389C4 18.9067 4 19.6044 4 21M16.5 7.5C16.5 9.98528 14.4853 12 12 12C9.51472 12 7.5 9.98528 7.5 7.5C7.5 5.01472 9.51472 3 12 3C14.4853 3 16.5 5.01472 16.5 7.5Z"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
-						</div>
-						<div class="profile-info">
-							<h2>{user.name}</h2>
-							<p class="username">@{user.username}</p>
-						</div>
+<div class="flex min-h-screen flex-col bg-background">
+	<!-- Header always visible -->
+	<header
+		class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+	>
+		<div class="container flex h-16 items-center justify-between py-4">
+			<div class="flex items-center gap-4">
+				<div class="flex items-center gap-2 font-bold text-xl tracking-tight mr-4">
+					<div class="bg-primary text-primary-foreground rounded-md p-1">
+						<Activity class="w-5 h-5" />
 					</div>
-
-					<!-- API Key Card -->
-					<div class="glass-pane card api-card">
-						<div class="card-header">
-							<h3>API Access</h3>
-							<div class="status-badge {currentApiKey ? 'active' : 'inactive'}">
-								{currentApiKey ? 'Active' : 'Inactive'}
-							</div>
-						</div>
-
-						<div class="card-body">
-							{#if currentApiKey}
-								<div
-									class="key-display"
-									on:mouseenter={() => (hoveredKey = true)}
-									on:mouseleave={() => (hoveredKey = false)}
-									role="group"
-								>
-									<div class="key-value" class:blurred={!hoveredKey}>
-										{currentApiKey}
-									</div>
-									<div class="key-actions">
-										<button class="icon-btn" on:click={() => copyToClipboard(currentApiKey)}
-											>Copy</button
-										>
-										<button class="icon-btn danger" on:click={revokeApiKey} disabled={keyLoading}
-											>Revoke</button
-										>
-									</div>
-								</div>
-								<p class="helper-text">Hover to view key. Keep it secret.</p>
-							{:else}
-								<p class="empty-state">No active API key found.</p>
-								<button class="cta-button" on:click={generateApiKey} disabled={keyLoading}>
-									{#if keyLoading}
-										Generating...
-									{:else}
-										Generate Key
-									{/if}
-								</button>
-							{/if}
-						</div>
-					</div>
+					FASMO
 				</div>
-			{/if}
+				<Separator orientation="vertical" class="h-6 hidden md:block" />
+				<Breadcrumb.Root class="hidden md:block">
+					<Breadcrumb.List>
+						<Breadcrumb.Item>
+							<Breadcrumb.Link href="/">{t('common.home')}</Breadcrumb.Link>
+						</Breadcrumb.Item>
+						<Breadcrumb.Separator />
+						<Breadcrumb.Item>
+							<Breadcrumb.Page>{t('dashboard.title')}</Breadcrumb.Page>
+						</Breadcrumb.Item>
+					</Breadcrumb.List>
+				</Breadcrumb.Root>
+			</div>
+			<div class="flex items-center gap-4">
+				<LanguageSwitcher />
+				<ThemeToggle />
+
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						<Button
+							variant="ghost"
+							class="relative h-10 w-10 rounded-full p-0 overflow-hidden border border-border/50 hover:bg-muted/50"
+						>
+							<Avatar.Root class="h-full w-full">
+								<Avatar.Fallback class="bg-primary text-primary-foreground text-xs font-bold">
+									{user ? getInitials(user.name) : '??'}
+								</Avatar.Fallback>
+							</Avatar.Root>
+						</Button>
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content class="w-56" align="end">
+						<DropdownMenu.Label class="font-normal">
+							<div class="flex flex-col space-y-1">
+								<p class="text-sm font-medium leading-none">{user?.name}</p>
+								<p class="text-xs leading-none text-muted-foreground">{user?.email}</p>
+							</div>
+						</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Group>
+							<DropdownMenu.Item onclick={() => (activeTab = 'overview')}>
+								{t('common.overview')}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={() => (activeTab = 'api-access')}>
+								{t('dashboard.api_access')}
+							</DropdownMenu.Item>
+							<DropdownMenu.Item disabled>
+								{t('common.settings')}
+							</DropdownMenu.Item>
+						</DropdownMenu.Group>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item
+							onclick={handleLogout}
+							class="text-destructive focus:text-destructive"
+						>
+							<LogOut class="mr-2 h-4 w-4" />
+							<span>{t('common.logout')}</span>
+						</DropdownMenu.Item>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+			</div>
 		</div>
+	</header>
+
+	{#if loading}
+		<main class="flex-1 container pb-8 pt-36 space-y-12">
+			<div class="flex items-center justify-between pt-4">
+				<div class="space-y-2">
+					<Skeleton class="h-8 w-[150px]" />
+					<Skeleton class="h-4 w-[250px]" />
+				</div>
+			</div>
+
+			<div class="space-y-4">
+				<Skeleton class="h-10 w-[300px]" />
+				<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+					{#each Array(4) as _}
+						<Card>
+							<CardHeader class="pb-2">
+								<Skeleton class="h-4 w-24" />
+							</CardHeader>
+							<CardContent>
+								<Skeleton class="h-8 w-16 mb-1" />
+								<Skeleton class="h-3 w-32" />
+							</CardContent>
+						</Card>
+					{/each}
+				</div>
+				<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+					<Skeleton class="h-[400px] lg:col-span-3 rounded-xl" />
+					<Skeleton class="h-[400px] lg:col-span-4 rounded-xl" />
+				</div>
+			</div>
+		</main>
+	{:else if user}
+		<main class="flex-1 container pb-8 pt-36 space-y-12">
+			<div class="flex items-center justify-between pt-4">
+				<div class="space-y-1">
+					<h2 class="text-3xl font-bold tracking-tight">{t('common.overview')}</h2>
+					<p class="text-sm text-muted-foreground">{t('dashboard.subtitle')}</p>
+				</div>
+				<div class="flex items-center space-x-2">
+					<Badge variant="outline" class="font-mono text-[10px] text-muted-foreground bg-muted/30">
+						v1.0.4-stable
+					</Badge>
+				</div>
+			</div>
+
+			<Tabs.Root bind:value={activeTab} class="space-y-4">
+				<Tabs.List>
+					<Tabs.Trigger value="overview" class="data-[state=active]:text-primary font-semibold">
+						{t('common.overview')}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="api-access" class="data-[state=active]:text-primary font-semibold">
+						{t('dashboard.api_access')}
+					</Tabs.Trigger>
+					<Tabs.Trigger
+						value="settings"
+						disabled
+						class="data-[state=active]:text-primary font-semibold"
+					>
+						{t('common.settings')}
+					</Tabs.Trigger>
+				</Tabs.List>
+
+				<Tabs.Content value="overview" class="space-y-4">
+					<div in:fade={{ duration: 200 }} class="space-y-4">
+						<!-- Top Stats -->
+						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+							<Card>
+								<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+									<CardTitle
+										class="text-sm font-medium uppercase tracking-wider text-muted-foreground"
+										>{t('dashboard.system_status')}</CardTitle
+									>
+									<div class="p-2 bg-green-500/10 rounded-full">
+										<Activity class="h-4 w-4 text-green-500" />
+									</div>
+								</CardHeader>
+								<CardContent>
+									<div class="text-2xl font-bold text-green-500">{t('dashboard.active')}</div>
+									<p class="text-[10px] text-muted-foreground mt-1">
+										{t('dashboard.stats.status_desc')}
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+									<CardTitle
+										class="text-sm font-medium uppercase tracking-wider text-muted-foreground"
+										>{t('dashboard.stats.security')}</CardTitle
+									>
+									<div class="p-2 bg-blue-500/10 rounded-full">
+										<ShieldCheck class="h-4 w-4 text-blue-500" />
+									</div>
+								</CardHeader>
+								<CardContent>
+									<div class="text-2xl font-bold">{t('dashboard.stats.standard')}</div>
+									<p class="text-[10px] text-muted-foreground mt-1">
+										{t('dashboard.stats.security_desc')}
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+									<CardTitle
+										class="text-sm font-medium uppercase tracking-wider text-muted-foreground"
+										>{t('dashboard.stats.access_tier')}</CardTitle
+									>
+									<div class="p-2 bg-orange-500/10 rounded-full">
+										<Zap class="h-4 w-4 text-orange-500" />
+									</div>
+								</CardHeader>
+								<CardContent>
+									<div class="flex items-center gap-2">
+										<div class="text-2xl font-bold">
+											{t('dashboard.stats.keys_count', { count: 1 })}
+										</div>
+										<Badge variant="secondary" class="text-[10px] h-4">{t('common.free')}</Badge>
+									</div>
+									<p class="text-[10px] text-muted-foreground mt-1">
+										{t('dashboard.stats.access_tier_desc')}
+									</p>
+								</CardContent>
+							</Card>
+							<Card>
+								<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+									<CardTitle
+										class="text-sm font-medium uppercase tracking-wider text-muted-foreground"
+										>{t('dashboard.stats.last_login')}</CardTitle
+									>
+									<div class="p-2 bg-purple-500/10 rounded-full">
+										<LayoutDashboard class="h-4 w-4 text-purple-500" />
+									</div>
+								</CardHeader>
+								<CardContent>
+									<div class="text-2xl font-bold">
+										{t('common.today')}, {new Date().toLocaleTimeString([], {
+											hour: '2-digit',
+											minute: '2-digit'
+										})}
+									</div>
+									<p class="text-[10px] text-muted-foreground mt-1">
+										{t('dashboard.stats.last_login_desc')}
+									</p>
+								</CardContent>
+							</Card>
+						</div>
+
+						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+							<!-- Profile Card -->
+							<Card class="lg:col-span-3">
+								<CardHeader>
+									<CardTitle>{t('dashboard.profile_title')}</CardTitle>
+									<CardDescription>{t('dashboard.profile_desc')}</CardDescription>
+								</CardHeader>
+								<CardContent class="flex flex-col items-center pt-2 pb-6">
+									<Avatar.Root class="h-24 w-24 border-2 border-primary/10 shadow-sm mb-4">
+										<Avatar.Fallback
+											class="text-2xl font-bold bg-gradient-to-br from-primary/80 to-primary text-primary-foreground"
+										>
+											{getInitials(user.name)}
+										</Avatar.Fallback>
+									</Avatar.Root>
+									<h3 class="text-2xl font-bold">{user.name}</h3>
+									<div class="flex items-center gap-2 mt-1">
+										<span class="text-sm font-mono text-muted-foreground">@{user.username}</span>
+										<Badge variant="outline" class="text-[10px] h-4">{t('common.verified')}</Badge>
+									</div>
+									<Separator class="my-6 w-full" />
+									<div class="w-full space-y-3">
+										<div class="flex justify-between text-sm">
+											<span class="text-muted-foreground">{t('common.email')}</span>
+											<span class="font-medium">{user.email}</span>
+										</div>
+										<div class="flex justify-between text-sm">
+											<span class="text-muted-foreground">{t('dashboard.id_number')}</span>
+											<span class="font-mono text-xs">{user.userId}</span>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+
+							<!-- Shortcut / Action Card -->
+							<Card class="lg:col-span-4 overflow-hidden">
+								<CardHeader>
+									<CardTitle>{t('dashboard.management_title')}</CardTitle>
+									<CardDescription>{t('dashboard.management_desc')}</CardDescription>
+								</CardHeader>
+								<CardContent class="space-y-4">
+									{#if currentApiKey}
+										<div class="space-y-4" in:slide>
+											<div class="flex items-center justify-between mb-2">
+												<div class="flex items-center gap-2">
+													<ShieldCheck class="w-4 h-4 text-green-500" />
+													<span class="text-sm font-medium">{t('dashboard.active_key')}</span>
+												</div>
+												<Badge
+													variant="outline"
+													class="bg-green-500/5 text-green-600 border-green-500/20"
+													>{t('dashboard.operational')}</Badge
+												>
+											</div>
+											<div
+												class="relative flex items-center justify-between p-5 bg-muted/40 border-2 border-border/60 rounded-xl overflow-hidden group transition-all hover:border-primary/20"
+												onmouseenter={() => (hoveredKey = true)}
+												onmouseleave={() => (hoveredKey = false)}
+												role="group"
+											>
+												<div
+													class="font-mono text-xl text-primary tracking-wider truncate transition-all duration-500 {hoveredKey
+														? 'blur-none opacity-100'
+														: 'blur-md opacity-40 select-none'}"
+												>
+													{currentApiKey}
+												</div>
+												<div class="flex items-center gap-2 ml-4">
+													<Button
+														variant="outline"
+														size="icon"
+														class="rounded-full h-10 w-10"
+														onclick={() => copyToClipboard(currentApiKey, 'API Key')}
+														title={t('dashboard.copy')}
+													>
+														<Copy class="w-4 h-4" />
+													</Button>
+													<Button
+														variant="destructive"
+														size="icon"
+														class="rounded-full h-10 w-10 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-none"
+														onclick={() => (isRevokeDialogOpen = true)}
+														disabled={keyLoading}
+														title={t('dashboard.revoke')}
+													>
+														<Trash2 class="w-4 h-4" />
+													</Button>
+												</div>
+											</div>
+											<div
+												class="flex items-center justify-center gap-2 text-[10px] text-muted-foreground uppercase tracking-tighter"
+											>
+												<div class="h-px w-8 bg-border"></div>
+												{t('dashboard.hover_to_view')}
+												<div class="h-px w-8 bg-border"></div>
+											</div>
+										</div>
+									{:else}
+										<EmptyState
+											title={t('dashboard.no_key')}
+											description={t('dashboard.no_key_desc')}
+											icon={ShieldAlert}
+											class="min-h-[250px] border-border/50 bg-muted/20"
+										>
+											<Button
+												onclick={generateApiKey}
+												disabled={keyLoading}
+												class="w-full max-w-xs px-8"
+											>
+												{#if keyLoading}
+													<Loader2 class="w-4 h-4 mr-2 animate-spin" />
+													{t('dashboard.generating')}
+												{:else}
+													<Key class="w-4 h-4 mr-2" />
+													{t('dashboard.generate_key')}
+												{/if}
+											</Button>
+										</EmptyState>
+									{/if}
+
+									<Separator class="my-4" />
+
+									<Alert.Root class="bg-muted/30 border-border/50">
+										<ExternalLink class="h-4 w-4" />
+										<Alert.Title class="text-sm font-semibold"
+											>{t('dashboard.docs_title')}</Alert.Title
+										>
+										<Alert.Description class="text-xs text-muted-foreground">
+											{t('dashboard.docs_desc')}
+										</Alert.Description>
+									</Alert.Root>
+								</CardContent>
+							</Card>
+						</div>
+					</div></Tabs.Content
+				>
+
+				<Tabs.Content value="api-access">
+					<div in:fade={{ duration: 200 }} class="space-y-4">
+						<Card>
+							<CardHeader>
+								<CardTitle>{t('dashboard.logs_title')}</CardTitle>
+								<CardDescription>
+									{t('dashboard.logs_desc')}
+								</CardDescription>
+							</CardHeader>
+							<CardContent
+								class="h-[400px] flex items-center justify-center border-t border-dashed mt-4"
+							>
+								<p class="text-sm text-muted-foreground">{t('dashboard.logs_coming_soon')}</p>
+							</CardContent>
+						</Card>
+					</div>
+				</Tabs.Content>
+			</Tabs.Root>
+		</main>
+
+		<!-- Revoke Dialog -->
+		<Dialog.Root bind:open={isRevokeDialogOpen}>
+			<Dialog.Content class="sm:max-w-[425px]">
+				<Dialog.Header>
+					<Dialog.Title class="text-2xl">{t('dashboard.revoke_title')}</Dialog.Title>
+					<Dialog.Description class="pt-2">
+						{t('dashboard.revoke_confirm')}
+					</Dialog.Description>
+				</Dialog.Header>
+				<div class="bg-destructive/10 p-4 rounded-lg flex gap-3 my-4">
+					<ShieldAlert class="w-5 h-5 text-destructive shrink-0" />
+					<p class="text-xs text-destructive font-medium leading-tight">
+						{t('dashboard.revoke_warning')}
+					</p>
+				</div>
+				<Dialog.Footer>
+					<Button variant="ghost" onclick={() => (isRevokeDialogOpen = false)}
+						>{t('common.cancel')}</Button
+					>
+					<Button variant="destructive" onclick={revokeApiKey} disabled={keyLoading}
+						>{t('dashboard.revoke')}</Button
+					>
+				</Dialog.Footer>
+			</Dialog.Content>
+		</Dialog.Root>
 	{/if}
 </div>
 
 <style>
-	.page-container {
-		min-height: 100vh;
-		padding: var(--space-lg);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		color: var(--ghost-white);
-	}
-
-	.loader-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 1rem;
-		margin-top: 40vh;
-		color: var(--text-muted);
-	}
-
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid rgba(255, 255, 255, 0.1);
-		border-radius: 50%;
-		border-top-color: var(--primary);
-		animation: spin 1s ease-in-out infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.content {
-		width: 100%;
-		max-width: 1000px;
+	:global(.container) {
+		max-width: 1200px;
 		margin: 0 auto;
-	}
-
-	/* Dashboard Styles */
-	.dashboard-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		margin-bottom: var(--space-xl);
-		padding-bottom: var(--space-md);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-	}
-
-	.header-text h1 {
-		font-size: 2.5rem;
-		margin: 0;
-		background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
-		background-clip: text;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-	}
-
-	.subtitle {
-		color: var(--text-muted);
-		font-size: 0.9rem;
-		margin-top: 4px;
-	}
-
-	.status-online {
-		color: var(--success);
-		font-weight: bold;
-		text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
-	}
-
-	.logout-btn {
-		background: transparent;
-		border: 1px solid var(--glass-border);
-		color: var(--text-muted);
-		padding: 8px 16px;
-		border-radius: 8px;
-		transition: all 0.2s;
-	}
-
-	.logout-btn:hover {
-		color: var(--error);
-		border-color: var(--error);
-		background: rgba(255, 77, 77, 0.05);
-	}
-
-	.dashboard-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: var(--space-lg);
-	}
-
-	@media (min-width: 768px) {
-		.dashboard-grid {
-			grid-template-columns: 1fr 1.5fr;
-		}
-	}
-
-	.card {
-		padding: var(--space-lg);
-		border-radius: 20px;
-	}
-
-	/* Profile Card */
-	.profile-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: var(--space-md);
-	}
-
-	.card-icon {
-		width: 80px;
-		height: 80px;
-		background: rgba(255, 255, 255, 0.05);
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid var(--glass-border);
-		color: var(--primary);
-	}
-
-	.icon-svg {
-		width: 40px;
-		height: 40px;
-	}
-
-	.profile-info h2 {
-		font-size: 1.5rem;
-		margin: 0;
-	}
-
-	.username {
-		color: var(--text-muted);
-		font-family: monospace;
-		margin-top: 4px;
-	}
-
-	/* API Card */
-	.api-card {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.card-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: var(--space-lg);
-	}
-
-	.card-header h3 {
-		font-size: 1.2rem;
-		font-weight: 600;
-		color: var(--ghost-white);
-		margin: 0;
-	}
-
-	.status-badge {
-		font-size: 0.75rem;
-		padding: 4px 8px;
-		border-radius: 4px;
-		font-weight: bold;
-		letter-spacing: 0.05em;
-	}
-
-	.status-badge.active {
-		background: rgba(0, 255, 157, 0.1);
-		color: var(--success);
-		border: 1px solid rgba(0, 255, 157, 0.2);
-	}
-
-	.status-badge.inactive {
-		background: rgba(255, 255, 255, 0.05);
-		color: var(--text-muted);
-	}
-
-	.card-body {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-	}
-
-	.empty-state {
-		color: var(--text-muted);
-		margin-bottom: var(--space-md);
-		text-align: center;
-	}
-
-	.key-display {
-		background: rgba(0, 0, 0, 0.3);
-		border-radius: 12px;
-		padding: 16px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 16px;
-		border: 1px solid var(--glass-border);
-		margin-bottom: 8px;
-	}
-
-	.key-value {
-		font-family: monospace;
-		font-size: 1.1rem;
-		color: var(--primary);
-		word-break: break-all;
-		transition: all 0.3s ease;
-	}
-
-	.blurred {
-		filter: blur(8px);
-		opacity: 0.5;
-		user-select: none;
-	}
-
-	.key-actions {
-		display: flex;
-		gap: 8px;
-	}
-
-	.icon-btn {
-		background: rgba(255, 255, 255, 0.1);
-		border: none;
-		color: var(--ghost-white);
-		padding: 6px 12px;
-		border-radius: 6px;
-		font-size: 0.8rem;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.icon-btn:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	.icon-btn.danger {
-		background: rgba(255, 77, 77, 0.1);
-		color: var(--error);
-	}
-
-	.icon-btn.danger:hover {
-		background: rgba(255, 77, 77, 0.2);
-	}
-
-	.helper-text {
-		font-size: 0.8rem;
-		color: var(--text-muted);
-		text-align: center;
-		margin-top: 8px;
-	}
-
-	.cta-button {
-		width: 100%;
-		padding: 14px;
-		border-radius: 12px;
-		background: linear-gradient(135deg, var(--primary) 0%, #00c2bb 100%);
-		color: #000;
-		font-weight: 700;
-		text-transform: uppercase;
-		font-size: 0.9rem;
-		letter-spacing: 0.05em;
-		transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-		text-align: center;
-		border: none;
-		cursor: pointer;
-	}
-
-	.cta-button:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 10px 20px rgba(0, 242, 234, 0.3);
+		padding: 0 1rem;
 	}
 </style>

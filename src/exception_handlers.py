@@ -1,4 +1,6 @@
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from src.api_keys.exceptions import (
@@ -12,6 +14,7 @@ from src.api_keys.http_exceptions import (
     APIKeyNotFound,
 )
 from src.auth.exceptions import (
+    AuthOperationError,
     IncorrectCredentialsError,
     InvalidJWTTokenError,
     InvalidRefreshTokenError,
@@ -24,6 +27,7 @@ from src.auth.exceptions import (
 )
 from src.auth.http_exceptions import (
     AccountLocked,
+    AuthOperationFailed,
     EmailNotVerified,
     IncorrectEmailOrPassword,
     InvalidJWTToken,
@@ -38,6 +42,7 @@ from src.auth.http_exceptions import (
 from src.exceptions import DomainException
 from src.http_exceptions import DetailedHTTPException
 from src.logging_config import create_logger
+from src.users.constants import ErrorCode
 from src.users.exceptions import AccountLocked as DomainAccountLocked
 from src.users.exceptions import EmailAlreadyExistsError
 from src.users.exceptions import EmailNotVerified as DomainEmailNotVerified
@@ -89,6 +94,8 @@ async def domain_exception_handler(request: Request, exc: DomainException):
         return await detailed_http_exception_handler(request, PasswordsNotMatch())
     if isinstance(exc, PasswordPolicyViolationError):
         return await detailed_http_exception_handler(request, PasswordPolicyViolation())
+    if isinstance(exc, AuthOperationError):
+        return await detailed_http_exception_handler(request, AuthOperationFailed())
 
     if isinstance(exc, DomainAccountLocked):
         return await detailed_http_exception_handler(request, AccountLocked())
@@ -124,4 +131,30 @@ async def detailed_http_exception_handler(request: Request, exc: DetailedHTTPExc
         status_code=exc.STATUS_CODE,
         content={"detail": exc.detail},
         headers=getattr(exc, "headers", None),
+    )
+
+
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
+    errors = exc.errors()
+    if errors:
+        first_error = errors[0]
+        msg = first_error.get("msg", "Invalid request")
+
+        # Clean Pydantic prefix
+        clean_msg = msg
+        if msg.startswith("Value error, "):
+            clean_msg = msg.replace("Value error, ", "")
+
+        # Only return 400 if it matches known password errors
+        if (
+            clean_msg == ErrorCode.PASSWORD_MISMATCH
+            or clean_msg == ErrorCode.PASSWORD_RULES
+        ):
+            return JSONResponse(status_code=400, content={"detail": clean_msg})
+
+    return JSONResponse(
+        status_code=422,
+        content={"detail": jsonable_encoder(exc.errors())},
     )
