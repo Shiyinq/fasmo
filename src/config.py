@@ -1,4 +1,4 @@
-from typing import List 
+from typing import List, Optional
 
 from pydantic import SecretStr, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_BYTES: int = 1_048_576  # 1 MB
 
     API_BASE_URL: str = "http://localhost:8080/api"
+    COOKIE_DOMAIN: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=True
@@ -229,6 +230,11 @@ class Settings(BaseSettings):
     @property
     def max_upload_size_bytes(self) -> int:
         return self.MAX_UPLOAD_SIZE_BYTES
+
+
+    @property
+    def cookie_domain(self) -> Optional[str]:
+        return self.COOKIE_DOMAIN
 
 
 config = Settings()
