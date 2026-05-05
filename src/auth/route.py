@@ -41,6 +41,7 @@ from src.dependencies import (
     get_google_sso,
     get_settings,
     get_user_service,
+    require_csrf_protection,
 )
 from src.limiter import limiter
 from src.logging_config import create_logger
@@ -74,6 +75,7 @@ def _set_auth_cookies(response: Response, refresh_token: str, config: Settings):
         path="/",
         samesite="lax",
         secure=not config.is_env_dev,
+        domain=config.cookie_domain,
     )
 
     _set_csrf_cookie(response, config)
@@ -85,10 +87,11 @@ def _set_csrf_cookie(response: Response, config: Settings):
         key=CSRFService.CSRF_TOKEN_COOKIE,
         value=csrf_token,
         httponly=False,
-        max_age=3600,
+        max_age=REFRESH_TOKEN_MAX_AGE,
         path="/",
         samesite="lax",
         secure=not config.is_env_dev,
+        domain=config.cookie_domain,
     )
 
 
@@ -101,6 +104,7 @@ def _set_access_token_cookie(response: Response, access_token: str, config: Sett
         path="/",
         samesite="lax",
         secure=not config.is_env_dev,
+        domain=config.cookie_domain,
     )
 
 
@@ -147,6 +151,7 @@ async def signin_with_email_and_password(
 async def refresh_access_token(
     request: Request,
     response: Response,
+    _=Depends(require_csrf_protection),
     auth_service: AuthService = Depends(get_auth_service),
     config: Settings = Depends(get_settings),
 ):
@@ -173,37 +178,57 @@ async def refresh_access_token(
         raise InvalidRefreshTokenError()
 
     device, ip, browser, user_agent = _extract_request_info(request)
-    if (
-        token_data["device"] != device
-        or token_data["ip"] != ip
-        or token_data["browser"] != browser
-    ):
-        logger.warning(f"Device/IP/Browser mismatch user_id={token_data.get('userId')}")
+
+    # Check for mismatches but be lenient with IP changes
+    mismatches = []
+    if token_data["device"] != device:
+        mismatches.append(f"device ({token_data['device']} -> {device})")
+    if token_data["browser"] != browser:
+        mismatches.append(f"browser ({token_data['browser']} -> {browser})")
+
+    if mismatches:
+        logger.warning(
+            f"Security mismatch detected for user_id={token_data.get('userId')}: {', '.join(mismatches)}"
+        )
         await auth_service.delete_refresh_token(hash_refresh_token)
         raise SuspiciousActivityError()
+
+    # Log IP change but don't invalidate session
+    if token_data["ip"] != ip:
+        logger.info(
+            f"IP change detected for user_id={token_data.get('userId')}: {token_data['ip']} -> {ip}. Allowing refresh because device/browser matched."
+        )
 
     created_at = token_data["createdAt"]
     if created_at.tzinfo is None:
         created_at = created_at.replace(tzinfo=timezone.utc)
 
-    if (
-        datetime.now(timezone.utc) - created_at
-    ).days >= config.refresh_token_max_age_days:
+    age_days = (datetime.now(timezone.utc) - created_at).days
+    if age_days >= config.refresh_token_max_age_days:
         await auth_service.delete_refresh_token(hash_refresh_token)
         raise RefreshTokenExpiredError()
 
-    await auth_service.update_refresh_token_last_used(hash_refresh_token)
-    await auth_service.save_login_history(
-        token_data["userId"],
-        device,
-        ip,
-        browser,
-        user_agent_raw=user_agent,
-    )
+    threshold_days = 7
+    should_rotate = age_days >= (config.refresh_token_max_age_days - threshold_days)
+
+    if should_rotate:
+        await auth_service.delete_refresh_token(hash_refresh_token)
+        refresh_token = await auth_service.register_refresh_token_activity(
+            token_data["userId"], device, ip, browser, user_agent
+        )
+        _set_auth_cookies(response, refresh_token, config)
+    else:
+        await auth_service.update_refresh_token_last_used(hash_refresh_token)
+        await auth_service.save_login_history(
+            token_data["userId"],
+            device,
+            ip,
+            browser,
+            user_agent_raw=user_agent,
+        )
+
     access_token = auth_service.create_access_token(data={"sub": token_data["userId"]})
     _set_access_token_cookie(response, access_token, config)
-
-    _set_csrf_cookie(response, config)
 
     return {"access_token": access_token, "token_type": "bearer"}
 
