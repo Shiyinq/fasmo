@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { fly } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import SEO from '$lib/components/common/SEO.svelte';
 	import { useTranslation } from '$lib/i18n/useTranslation';
 	import { Search, ServerCrash, ShieldAlert, WifiOff, Home, RefreshCw } from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	const { t } = useTranslation();
 
@@ -15,7 +16,7 @@
 					subtitle: t('errors.404.subtitle'),
 					description: t('errors.404.description'),
 					icon: Search,
-					color: 'var(--warning)'
+					color: 'text-primary'
 				};
 			case 500:
 				return {
@@ -23,7 +24,7 @@
 					subtitle: t('errors.500.subtitle'),
 					description: t('errors.500.description'),
 					icon: ServerCrash,
-					color: 'var(--error)'
+					color: 'text-destructive'
 				};
 			case 403:
 				return {
@@ -31,7 +32,7 @@
 					subtitle: t('errors.403.subtitle'),
 					description: t('errors.403.description'),
 					icon: ShieldAlert,
-					color: 'var(--error)'
+					color: 'text-destructive'
 				};
 			case 401:
 				return {
@@ -39,7 +40,7 @@
 					subtitle: t('errors.401.subtitle'),
 					description: t('errors.401.description'),
 					icon: ShieldAlert,
-					color: 'var(--primary)'
+					color: 'text-primary'
 				};
 			default:
 				return {
@@ -47,7 +48,7 @@
 					subtitle: t('errors.default.subtitle'),
 					description: t('errors.default.description'),
 					icon: WifiOff,
-					color: 'var(--text-muted)'
+					color: 'text-muted-foreground'
 				};
 		}
 	}
@@ -58,163 +59,69 @@
 
 <SEO title="FASMO | {status} - {errorInfo.title}" />
 
-<div class="error-page" in:fly={{ y: 20, duration: 1000 }}>
-	<div class="error-container glass-pane">
-		<div class="icon-wrapper" style="--icon-color: {errorInfo.color}">
-			<errorInfo.icon size={48} />
+<div
+	class="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-hidden"
+	in:fly={{ y: 20, duration: 1000 }}
+>
+	<!-- Decorative background element -->
+	<div
+		class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -z-10"
+	></div>
+
+	<div class="w-full max-w-lg text-center space-y-6">
+		<div class="flex flex-col items-center justify-center space-y-4">
+			<div
+				class="w-24 h-24 rounded-3xl bg-background border border-border shadow-2xl flex items-center justify-center {errorInfo.color}"
+				in:fly={{ y: -20, duration: 800 }}
+			>
+				<errorInfo.icon size={48} strokeWidth={1.5} />
+			</div>
+			<div
+				class="text-8xl font-black leading-none opacity-20 select-none tracking-tighter"
+				in:fade={{ duration: 1000 }}
+			>
+				{status}
+			</div>
 		</div>
-		<div class="status">{status}</div>
-		<h1>{errorInfo.title}</h1>
-		<p class="subtitle">{errorInfo.subtitle}</p>
-		<p class="description">{errorInfo.description}</p>
+
+		<div class="space-y-3" in:fly={{ y: 10, delay: 400, duration: 600 }}>
+			<h1 class="text-4xl font-black tracking-tight text-foreground sm:text-5xl uppercase italic">
+				{errorInfo.title}
+			</h1>
+			<p class="text-xl font-bold text-foreground/90">
+				{errorInfo.subtitle}
+			</p>
+			<p class="text-muted-foreground max-w-md mx-auto leading-relaxed text-sm sm:text-base">
+				{errorInfo.description}
+			</p>
+		</div>
 
 		{#if page.error?.message && page.error.message !== errorInfo.subtitle}
-			<div class="debug-info">
+			<div
+				class="max-w-md mx-auto p-4 bg-muted/50 rounded-xl border border-border/50 font-mono text-xs text-destructive overflow-x-auto"
+				in:fly={{ y: 10, delay: 600, duration: 600 }}
+			>
 				<code>{page.error.message}</code>
 			</div>
 		{/if}
 
-		<div class="actions">
-			<a href="/" class="btn-primary">
-				<Home size={18} />
+		<div
+			class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4"
+			in:fly={{ y: 10, delay: 800, duration: 600 }}
+		>
+			<Button href="/" size="lg" class="w-full sm:w-auto px-8 rounded-full font-bold">
+				<Home class="mr-2 w-5 h-5" />
 				{t('errors.goHome')}
-			</a>
-			<button class="btn-outline" onclick={() => window.location.reload()}>
-				<RefreshCw size={18} />
+			</Button>
+			<Button
+				variant="outline"
+				size="lg"
+				class="w-full sm:w-auto px-8 rounded-full font-bold"
+				onclick={() => window.location.reload()}
+			>
+				<RefreshCw class="mr-2 w-5 h-5" />
 				{t('errors.tryAgain')}
-			</button>
+			</Button>
 		</div>
 	</div>
 </div>
-
-<style>
-	.error-page {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: var(--space-lg);
-		background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0f 100%);
-	}
-
-	.error-container {
-		max-width: 550px;
-		width: 100%;
-		padding: var(--space-xl);
-		text-align: center;
-		border-radius: 24px;
-	}
-
-	.icon-wrapper {
-		width: 80px;
-		height: 80px;
-		margin: 0 auto var(--space-lg);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--icon-color);
-		background: rgba(255, 255, 255, 0.03);
-		border-radius: 20px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-	}
-
-	.status {
-		font-size: 5rem;
-		font-weight: 900;
-		line-height: 1;
-		background: linear-gradient(to bottom, var(--primary), transparent);
-		-webkit-background-clip: text;
-		background-clip: text;
-		-webkit-text-fill-color: transparent;
-		opacity: 0.3;
-		margin-bottom: var(--space-sm);
-	}
-
-	h1 {
-		font-size: 2rem;
-		font-weight: 800;
-		margin-bottom: var(--space-xs);
-		color: var(--primary);
-		letter-spacing: -0.02em;
-	}
-
-	.subtitle {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: white;
-		margin-bottom: var(--space-md);
-	}
-
-	.description {
-		color: var(--text-muted);
-		margin-bottom: var(--space-xl);
-		line-height: 1.6;
-		font-size: 0.95rem;
-	}
-
-	.debug-info {
-		background: rgba(0, 0, 0, 0.3);
-		padding: var(--space-sm) var(--space-md);
-		border-radius: 12px;
-		margin-bottom: var(--space-xl);
-		border: 1px solid rgba(255, 255, 255, 0.05);
-	}
-
-	code {
-		font-family: var(--font-mono);
-		font-size: 0.8rem;
-		color: var(--error);
-		word-break: break-all;
-	}
-
-	.actions {
-		display: flex;
-		gap: var(--space-md);
-		justify-content: center;
-	}
-
-	.btn-primary,
-	.btn-outline {
-		display: flex;
-		align-items: center;
-		gap: var(--space-sm);
-		padding: var(--space-sm) var(--space-lg);
-		border-radius: 99px;
-		font-weight: 600;
-		transition: all 0.2s;
-		font-size: 0.95rem;
-		cursor: pointer;
-	}
-
-	.btn-primary {
-		background: var(--primary);
-		color: white;
-	}
-
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 15px var(--primary-glow);
-	}
-
-	.btn-outline {
-		border: 1px solid var(--glass-border);
-		color: white;
-		background: transparent;
-	}
-
-	.btn-outline:hover {
-		background: rgba(255, 255, 255, 0.05);
-		transform: translateY(-1px);
-	}
-
-	@media (max-width: 480px) {
-		.actions {
-			flex-direction: column;
-		}
-		.btn-primary,
-		.btn-outline {
-			width: 100%;
-			justify-content: center;
-		}
-	}
-</style>

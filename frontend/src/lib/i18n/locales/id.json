@@ -11,7 +11,22 @@
 		"success": "Berhasil",
 		"cancel": "Batal",
 		"save": "Simpan",
-		"delete": "Hapus"
+		"delete": "Hapus",
+		"settings": "Pengaturan",
+		"overview": "Ringkasan",
+		"profile": "Profil",
+		"verified": "Terverifikasi",
+		"free": "GRATIS",
+		"today": "Hari ini",
+		"home": "Beranda",
+		"google": "Google",
+		"github": "GitHub"
+	},
+	"theme": {
+		"toggle": "Ganti tema",
+		"light": "Terang",
+		"dark": "Gelap",
+		"system": "Sistem"
 	},
 	"landing": {
 		"hero": "Arsitektur Kecepatan Tinggi",
@@ -44,6 +59,8 @@
 		"username_placeholder": "Nama Pengguna atau Email",
 		"register_subtitle": "Bergabunglah dengan generasi berikutnya. Bangun masa depan Anda.",
 		"full_name": "Nama Lengkap",
+		"full_name_placeholder": "misal: Alex Chen",
+		"email_placeholder": "nama@contoh.com",
 		"confirm_password": "Konfirmasi Kata Sandi",
 		"creating_account": "Sedang mendaftar...",
 		"next": "Lanjut",
@@ -65,6 +82,11 @@
 		"back_to_login": "Kembali ke Masuk",
 		"recovery_helper": "Kami akan mengirimkan tautan untuk mengatur ulang kata sandi Anda.",
 		"send_reset_link": "Kirim Tautan Atur Ulang",
+		"seo": {
+			"login_desc": "Akses masuk aman ke arsitektur FASMO.",
+			"register_desc": "Bergabunglah dengan jaringan FASMO.",
+			"verify_desc": "Verifikasi alamat email Anda untuk FASMO."
+		},
 		"verify_email": {
 			"title": "Verifikasi Email",
 			"verifying": "MEMVERIFIKASI",
@@ -84,6 +106,7 @@
 	},
 	"dashboard": {
 		"title": "Dasbor",
+		"subtitle": "Kelola akun dan akses API Anda.",
 		"system_status": "Status sistem",
 		"active": "Aktif",
 		"api_access": "Akses API",
@@ -92,42 +115,71 @@
 		"inactive_status": "Tidak Aktif",
 		"copy": "Salin",
 		"revoke": "Cabut",
+		"revoke_title": "Cabut Akses?",
+		"revoke_warning": "Semua aplikasi yang menggunakan kunci ini akan langsung berhenti berfungsi.",
+		"management_title": "Manajemen Kunci API",
+		"management_desc": "Kelola kunci akses frekuensi Anda dengan aman",
+		"active_key": "Kunci Frekuensi Aktif",
+		"operational": "Operasional",
+		"logs_title": "Log Akses API",
+		"logs_desc": "Lihat aktivitas kunci API dan log autentikasi terbaru Anda.",
+		"logs_coming_soon": "Log aktivitas akan segera tersedia.",
 		"generate_key": "Buat Kunci",
 		"generating": "Memproses...",
 		"hover_to_view": "Arahkan kursor untuk melihat kunci. Jaga kerahasiaannya.",
 		"no_key": "Tidak ada kunci API aktif ditemukan.",
+		"no_key_desc": "Anda tidak memiliki kunci frekuensi aktif. Buat satu untuk memulai transmisi.",
+		"docs_title": "Dokumentasi Pengembang",
+		"docs_desc": "Pelajari cara mengintegrasikan FASMO ke dalam aplikasi Anda sendiri menggunakan panduan API kami yang komprehensif.",
 		"copied": "Disalin ke papan klip.",
 		"revoked": "Kunci API dicabut.",
-		"revoke_confirm": "Apakah Anda yakin ingin memutuskan sambungan? Tindakan ini tidak dapat dibatalkan.",
-		"gen_success": "Kunci API berhasil dibuat."
+		"revoke_confirm": "Apakah Anda yakin ingin memutuskan sambungan? Tindakan ini tidak dapat dibatalkan dan akan segera membatalkan semua koneksi yang ada.",
+		"gen_success": "Kunci API berhasil dibuat.",
+		"stats": {
+			"status_desc": "Infrastruktur global sedang daring",
+			"security": "Tingkat Keamanan",
+			"security_desc": "Enkripsi multi-faktor aktif",
+			"standard": "Standar",
+			"access_tier": "Tingkat Akses",
+			"access_tier_desc": "Maksimum yang diizinkan untuk tingkat Anda",
+			"keys_count": "{count} Kunci",
+			"last_login": "Login Terakhir",
+			"last_login_desc": "Berdasarkan sesi saat ini"
+		},
+		"profile_title": "Profil Pengguna",
+		"profile_desc": "Detail identifikasi pribadi Anda",
+		"id_number": "Nomor ID"
 	},
 	"errors": {
+		"token_invalid": "Token sesi tidak valid.",
+		"signal_lost": "Sesi berakhir. Token tidak ditemukan.",
+		"security_req": "Mohon penuhi semua persyaratan keamanan.",
 		"404": {
 			"title": "Halaman Tidak Ditemukan",
-			"subtitle": "Sinyal telah mencapai jalan buntu.",
-			"description": "Frekuensi yang Anda cari tidak ada di sektor ini atau telah dipindahkan ke koordinat yang berbeda."
+			"subtitle": "Kami tidak dapat menemukan halaman yang Anda cari.",
+			"description": "Tautan mungkin rusak, atau halaman telah dipindahkan."
 		},
 		"500": {
-			"title": "Kegagalan Sistem",
-			"subtitle": "Terjadi kesalahan kritis pada inti.",
-			"description": "Sistem kami mengalami anomali internal. Kami sedang bekerja untuk memulihkan arsitektur kecepatan tinggi."
+			"title": "Kesalahan Server Internal",
+			"subtitle": "Terjadi kesalahan pada sistem kami.",
+			"description": "Sistem kami sedang mengalami gangguan. Silakan coba lagi nanti."
 		},
 		"403": {
 			"title": "Akses Ditolak",
-			"subtitle": "Tingkat izin Anda tidak mencukupi.",
-			"description": "Frekuensi ini dibatasi. Hubungi administrator jika Anda yakin ini adalah kesalahan."
+			"subtitle": "Anda tidak memiliki izin untuk mengakses halaman ini.",
+			"description": "Silakan hubungi administrator jika Anda merasa ini adalah kesalahan."
 		},
 		"401": {
-			"title": "Tidak Terautentikasi",
-			"subtitle": "Protokol memerlukan autentikasi.",
-			"description": "Transmisi Anda kekurangan kredensial yang diperlukan. Silakan masuk untuk melanjutkan aliran."
+			"title": "Tidak Sah",
+			"subtitle": "Autentikasi diperlukan.",
+			"description": "Silakan masuk untuk mengakses sumber daya ini."
 		},
 		"default": {
-			"title": "Interferensi Sinyal",
-			"subtitle": "Terjadi anomali yang tidak terduga.",
-			"description": "Kami mengalami gangguan sementara. Silakan coba hubungkan kembali koneksi."
+			"title": "Terjadi Kesalahan",
+			"subtitle": "Terjadi kesalahan yang tidak terduga.",
+			"description": "Silakan coba lagi nanti atau hubungi bantuan."
 		},
-		"goHome": "Kembali ke Basis",
-		"tryAgain": "Hubungkan Kembali"
+		"goHome": "Kembali ke Beranda",
+		"tryAgain": "Coba Lagi"
 	}
 }

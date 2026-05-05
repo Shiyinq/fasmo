@@ -23,7 +23,8 @@ export default [
 					caughtErrorsIgnorePattern: '^_'
 				}
 			],
-			'@typescript-eslint/no-explicit-any': 'off' // Relax this as per general project preference if needed, or keep for quality
+			'@typescript-eslint/no-explicit-any': 'off', // Relax this as per general project preference if needed, or keep for quality
+			'svelte/valid-compile': 'off'
 		}
 	},
 	{

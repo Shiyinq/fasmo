@@ -84,7 +84,12 @@ export function createAuthStore() {
 		},
 
 		getProfile: async () => {
-			return dedup.execute('profile', () => authApi.getProfile());
+			isLoading = true;
+			try {
+				return await dedup.execute('profile', () => authApi.getProfile());
+			} finally {
+				isLoading = false;
+			}
 		},
 
 		forgotPassword: async (data: PasswordResetRequest) => {

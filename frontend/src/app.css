@@ -1,65 +1,100 @@
 @import 'tailwindcss';
 
 @theme {
-	/* Core Colors adapted from Fasmo design */
-	--color-void: #050505;
-	--color-mist: #1a1a1a;
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
 
-	--color-primary: #00f2ea;
-	--color-secondary: #ff0055;
-	--color-success: #00ff9d;
-	--color-error: #ff4d4d;
-	--color-warning: #ffbf00;
+	--radius-xl: calc(var(--radius) + 4px);
+	--radius-lg: var(--radius);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 4px);
 
-	--color-ghost-white: #f8f9fa;
-	--color-text-muted: rgba(248, 249, 250, 0.6);
-
-	/* Spacing System */
-	--space-xs: 0.5rem;
-	--space-sm: 1rem;
-	--space-md: 1.5rem;
-	--space-lg: 2rem;
-	--space-xl: 3rem;
-
-	/* Color Aliases for easier use in CSS */
-	--primary: var(--color-primary);
-	--secondary: var(--color-secondary);
-	--success: var(--color-success);
-	--error: var(--color-error);
-	--warning: var(--color-warning);
-	--primary-glow: rgba(0, 242, 234, 0.3);
-
-	/* Glassmorphism Tokens */
-	--glass-bg: rgba(255, 255, 255, 0.03);
-	--glass-border: rgba(255, 255, 255, 0.08);
-	--glass-highlight: rgba(255, 255, 255, 0.15);
-	--glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-
-	/* Typography */
-	--font-display: 'Space Grotesk', sans-serif;
-	--font-body: 'Inter', sans-serif;
-
-	/* Transitions */
-	--ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-	--ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+	--font-sans:
+		'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+		'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 @layer base {
-	html,
-	body {
-		@apply bg-void text-ghost-white font-body antialiased h-full overflow-x-hidden;
-		background-image:
-			radial-gradient(circle at 15% 50%, rgba(26, 26, 30, 1) 0%, transparent 25%),
-			radial-gradient(circle at 85% 30%, rgba(10, 20, 30, 1) 0%, transparent 25%);
+	:root {
+		--background: oklch(1 0 0);
+		--foreground: oklch(0.145 0 0);
+		--card: oklch(1 0 0);
+		--card-foreground: oklch(0.145 0 0);
+		--popover: oklch(1 0 0);
+		--popover-foreground: oklch(0.145 0 0);
+		--primary: oklch(0.205 0 0);
+		--primary-foreground: oklch(0.985 0 0);
+		--secondary: oklch(0.97 0 0);
+		--secondary-foreground: oklch(0.205 0 0);
+		--muted: oklch(0.97 0 0);
+		--muted-foreground: oklch(0.556 0 0);
+		--accent: oklch(0.97 0 0);
+		--accent-foreground: oklch(0.205 0 0);
+		--destructive: oklch(0.577 0.245 27.325);
+		--destructive-foreground: oklch(0.985 0 0);
+		--border: oklch(0.922 0 0);
+		--input: oklch(0.922 0 0);
+		--ring: oklch(0.145 0 0);
+		--radius: 0.5rem;
+		--chart-1: oklch(0.646 0.222 41.116);
+		--chart-2: oklch(0.6 0.118 184.704);
+		--chart-3: oklch(0.398 0.07 227.392);
+		--chart-4: oklch(0.828 0.189 84.429);
+		--chart-5: oklch(0.769 0.188 70.08);
 	}
 
-	body::before {
-		content: '';
-		@apply fixed inset-0 pointer-events-none;
-		background:
-			linear-gradient(to bottom, #050505, #08080a, #050505),
-			url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-		z-index: -2;
+	.dark {
+		--background: oklch(0.145 0 0);
+		--foreground: oklch(0.985 0 0);
+		--card: oklch(0.145 0 0);
+		--card-foreground: oklch(0.985 0 0);
+		--popover: oklch(0.145 0 0);
+		--popover-foreground: oklch(0.985 0 0);
+		--primary: oklch(0.985 0 0);
+		--primary-foreground: oklch(0.205 0 0);
+		--secondary: oklch(0.269 0 0);
+		--secondary-foreground: oklch(0.985 0 0);
+		--muted: oklch(0.269 0 0);
+		--muted-foreground: oklch(0.708 0 0);
+		--accent: oklch(0.269 0 0);
+		--accent-foreground: oklch(0.985 0 0);
+		--destructive: oklch(0.396 0.141 25.723);
+		--destructive-foreground: oklch(0.985 0 0);
+		--border: oklch(0.269 0 0);
+		--input: oklch(0.269 0 0);
+		--ring: oklch(0.87 0 0);
+		--chart-1: oklch(0.488 0.243 264.376);
+		--chart-2: oklch(0.696 0.17 162.48);
+		--chart-3: oklch(0.769 0.188 70.08);
+		--chart-4: oklch(0.627 0.265 303.9);
+		--chart-5: oklch(0.645 0.246 16.439);
+	}
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground font-sans antialiased h-full overflow-x-hidden;
+		line-height: 1.5;
 	}
 
 	h1,
@@ -68,36 +103,16 @@
 	h4,
 	h5,
 	h6 {
-		@apply font-display font-bold tracking-tight leading-[1.1] text-ghost-white;
+		@apply font-sans font-bold tracking-tight text-foreground;
+		line-height: 1.2;
 	}
 
 	p {
-		@apply leading-relaxed text-text-muted;
+		@apply leading-relaxed;
 	}
 }
 
-@layer components {
-	/* Premium Fasmo Gradient */
-	.fasmo-gradient {
-		@apply bg-linear-to-r from-primary to-secondary;
-	}
-
-	/* Refined Glass Card */
-	.glass-card {
-		background: var(--glass-bg);
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		border: 1px solid var(--glass-border);
-		box-shadow: var(--glass-shadow);
-		@apply rounded-3xl;
-	}
-
-	/* Standard Glass Pane for containers */
-	.glass-pane {
-		background: rgba(255, 255, 255, 0.02);
-		backdrop-filter: blur(20px);
-		-webkit-backdrop-filter: blur(20px);
-		border: 1px solid var(--glass-border);
-		@apply rounded-2xl;
-	}
+::selection {
+	background-color: hsl(var(--primary) / 0.3);
+	color: inherit;
 }

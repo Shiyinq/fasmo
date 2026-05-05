@@ -5,7 +5,10 @@
 	import { page } from '$app/state';
 	import { isAuthenticated, authStore, isInitialDataLoaded } from '$lib/stores';
 	import { locale, type Locale } from '$lib/i18n';
-	import ToastContainer from '$lib/components/common/ToastContainer.svelte';
+	import { ModeWatcher } from 'mode-watcher';
+	import { Toaster } from '$lib/components/ui/sonner';
+	import LoadingBar from '$lib/components/LoadingBar.svelte';
+	import SplashScreen from '$lib/components/SplashScreen.svelte';
 	import SEO from '$lib/components/common/SEO.svelte';
 	import { logger } from '$lib/utils/logger';
 
@@ -75,19 +78,16 @@
 </script>
 
 <SEO />
+<ModeWatcher />
 
 <div class="min-h-screen flex flex-col relative overflow-x-hidden">
 	{#if !mounted}
-		<!-- Simple Splash Screen while hydrating -->
-		<div class="fixed inset-0 bg-void flex items-center justify-center z-50">
-			<div
-				class="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"
-			></div>
-		</div>
+		<SplashScreen />
 	{:else}
+		<LoadingBar />
 		<main class="flex-1 w-full relative">
 			{@render children()}
 		</main>
-		<ToastContainer />
+		<Toaster position="bottom-right" richColors />
 	{/if}
 </div>

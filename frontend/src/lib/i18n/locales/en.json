@@ -11,7 +11,22 @@
 		"success": "Success",
 		"cancel": "Cancel",
 		"save": "Save",
-		"delete": "Delete"
+		"delete": "Delete",
+		"settings": "Settings",
+		"overview": "Overview",
+		"profile": "Profile",
+		"verified": "Verified",
+		"free": "FREE",
+		"today": "Today",
+		"home": "Home",
+		"google": "Google",
+		"github": "GitHub"
+	},
+	"theme": {
+		"toggle": "Toggle theme",
+		"light": "Light",
+		"dark": "Dark",
+		"system": "System"
 	},
 	"landing": {
 		"hero": "High Velocity Architecture",
@@ -44,6 +59,8 @@
 		"username_placeholder": "Username or Email",
 		"register_subtitle": "Join the next generation. Build your future.",
 		"full_name": "Full Name",
+		"full_name_placeholder": "e.g. Alex Chen",
+		"email_placeholder": "name@example.com",
 		"confirm_password": "Confirm Password",
 		"creating_account": "Creating account...",
 		"next": "Next",
@@ -65,6 +82,11 @@
 		"back_to_login": "Back to Login",
 		"recovery_helper": "We'll send you a link to reset your password.",
 		"send_reset_link": "Send Reset Link",
+		"seo": {
+			"login_desc": "Secure login access to the FASMO architecture.",
+			"register_desc": "Join the FASMO network.",
+			"verify_desc": "Verify your email address for FASMO."
+		},
 		"verify_email": {
 			"title": "Email Verification",
 			"verifying": "VERIFYING",
@@ -84,6 +106,7 @@
 	},
 	"dashboard": {
 		"title": "Dashboard",
+		"subtitle": "Manage your account and API access.",
 		"system_status": "System status",
 		"active": "Active",
 		"api_access": "API Access",
@@ -92,42 +115,71 @@
 		"inactive_status": "Inactive",
 		"copy": "Copy",
 		"revoke": "Revoke",
+		"revoke_title": "Revoke Access?",
+		"revoke_warning": "All applications using this key will stop working instantly.",
+		"management_title": "API Key Management",
+		"management_desc": "Securely manage your frequency access keys",
+		"active_key": "Active Frequency Key",
+		"operational": "Operational",
+		"logs_title": "API Access Logs",
+		"logs_desc": "View your recent API key activities and authentication logs.",
+		"logs_coming_soon": "Activity logs will be available soon.",
 		"generate_key": "Generate Key",
 		"generating": "Generating...",
 		"hover_to_view": "Hover to view key. Keep it secret.",
 		"no_key": "No active API key found.",
+		"no_key_desc": "You don't have an active frequency key. Generate one to start transmission.",
+		"docs_title": "Developer Documentation",
+		"docs_desc": "Learn how to integrate FASMO into your own applications using our comprehensive API guide.",
 		"copied": "Copied to clipboard.",
 		"revoked": "API Key revoked.",
-		"revoke_confirm": "Are you sure you want to sever the connection? This action cannot be undone.",
-		"gen_success": "API Key generated successfully."
+		"revoke_confirm": "Are you sure you want to sever the connection? This action cannot be undone and will immediately invalidate all existing connections.",
+		"gen_success": "API Key generated successfully.",
+		"stats": {
+			"status_desc": "Global infrastructure is online",
+			"security": "Security Level",
+			"security_desc": "Multi-factor encryption enabled",
+			"standard": "Standard",
+			"access_tier": "Access Tier",
+			"access_tier_desc": "Maximum allowed for your tier",
+			"keys_count": "{count} Key",
+			"last_login": "Last Login",
+			"last_login_desc": "Based on current session"
+		},
+		"profile_title": "User Profile",
+		"profile_desc": "Your personal identification details",
+		"id_number": "ID Number"
 	},
 	"errors": {
+		"token_invalid": "Invalid session token.",
+		"signal_lost": "Session expired. No token found.",
+		"security_req": "Please meet all security requirements.",
 		"404": {
 			"title": "Page Not Found",
-			"subtitle": "The signal has reached a dead end.",
-			"description": "The frequency you are looking for does not exist in this sector or has been moved to a different coordinate."
+			"subtitle": "We couldn't find the page you're looking for.",
+			"description": "The link might be broken, or the page has been moved."
 		},
 		"500": {
-			"title": "System Failure",
-			"subtitle": "A critical error has occurred in the core.",
-			"description": "Our systems encountered an internal anomaly. We are working to restore the high-velocity architecture."
+			"title": "Internal Server Error",
+			"subtitle": "Something went wrong on our end.",
+			"description": "Our systems are experiencing issues. Please try again later."
 		},
 		"403": {
 			"title": "Access Denied",
-			"subtitle": "Your clearance level is insufficient.",
-			"description": "This frequency is restricted. Please contact your administrator if you believe this is an error."
+			"subtitle": "You don't have permission to access this page.",
+			"description": "Please contact the administrator if you believe this is an error."
 		},
 		"401": {
 			"title": "Unauthorized",
-			"subtitle": "Protocol requires authentication.",
-			"description": "Your transmission lacks the necessary credentials. Please log in to resume the stream."
+			"subtitle": "Authentication is required.",
+			"description": "Please log in to access this resource."
 		},
 		"default": {
-			"title": "Signal Interference",
-			"subtitle": "An unexpected anomaly has occurred.",
-			"description": "We've encountered a temporary disruption. Please try to re-establish the connection."
+			"title": "Something Went Wrong",
+			"subtitle": "An unexpected error occurred.",
+			"description": "Please try again later or contact support."
 		},
-		"goHome": "Return to Base",
-		"tryAgain": "Reconnect"
+		"goHome": "Back to Home",
+		"tryAgain": "Try Again"
 	}
 }
