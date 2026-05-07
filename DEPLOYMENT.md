@@ -33,12 +33,12 @@ Connect to your VPS via SSH and run the following commands (Skip if you used **Q
 # Update system
 sudo apt update && sudo apt upgrade -y
 
+# Install Dependencies (Git, Curl, Firewall, Make)
+sudo apt install -y git curl ufw make
+
 # Install Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
-
-# Install UFW (Firewall)
-sudo apt install ufw -y
 
 # ALLOW SSH (Crucial!)
 sudo ufw allow ssh

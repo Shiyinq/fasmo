@@ -21,7 +21,7 @@ sudo apt update && sudo apt upgrade -y
 
 # 2. Check & Install Dependencies
 echo "📦 Checking basic dependencies..."
-sudo apt install -y git curl ufw
+sudo apt install -y git curl ufw make
 
 # 3. Check & Install Docker
 if ! [ -x "$(command -v docker)" ]; then
