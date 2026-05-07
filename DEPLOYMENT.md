@@ -1,6 +1,14 @@
 # Fasmo Deployment Guide
 
-This guide explains how to deploy the **Fasmo** project on a single Linux VPS with full security and automation.
+## 0. Quick Setup (Automated - Recommended)
+
+If you are starting on a fresh Ubuntu VPS, you can automate the server preparation and application setup using our interactive script:
+
+```bash
+# Download and run the setup script
+curl -fsSL https://raw.githubusercontent.com/Shiyinq/fasmo/main/scripts/setup-server.sh | bash
+```
+This script handles system updates, Docker installation, Firewall configuration, Swap file creation, and interactive `.env` setup.
 
 ---
 
@@ -8,10 +16,10 @@ This guide explains how to deploy the **Fasmo** project on a single Linux VPS wi
 
 Before setting up the server, configure your domain in Cloudflare:
 
-1.  **Add Site**: Add your domain (e.g., `fasmo.com`) to Cloudflare.
+1.  **Add Site**: Add your domain (e.g., `fasmo.app`) to Cloudflare.
 2.  **DNS Records**: Add **A Records** pointing to your VPS IP for these 2 hostnames:
-    - `fasmo.com` (Main App/Frontend)
-    - `api.fasmo.com` (Backend API)
+    - `fasmo.app` (Main App/Frontend)
+    - `api.fasmo.app` (Backend API)
 3.  **Proxy Status**: Ensure the cloud icon is **Orange** (Proxied) for all records.
 4.  **SSL/TLS**: Set mode to **Full (Strict)**.
 
@@ -19,7 +27,7 @@ Before setting up the server, configure your domain in Cloudflare:
 
 ## 2. Server Preparation
 
-Connect to your VPS via SSH and run the following commands:
+Connect to your VPS via SSH and run the following commands (Skip if you used **Quick Setup**):
 
 ```bash
 # Update system
@@ -96,8 +104,8 @@ We are using Cloudflare Proxy, so we use **Cloudflare Origin Certificates** for 
     - Click **Create Certificate**.
     - Keep defaults (RSA 2048, 15 years) and click **Create**.
 2.  **Save to VPS**:
-    - Copy the **Origin Certificate** and save it to: `certbot/conf/live/fasmo.com/fullchain.pem`
-    - Copy the **Private Key** and save it to: `certbot/conf/live/fasmo.com/privkey.pem`
+    - Copy the **Origin Certificate** and save it to: `certbot/conf/live/fasmo.app/fullchain.pem`
+    - Copy the **Private Key** and save it to: `certbot/conf/live/fasmo.app/privkey.pem`
 3.  **Active SSL Mode**:
     - In Cloudflare, set SSL/TLS mode to **Full (Strict)**.
 4.  **Reload Nginx**:
@@ -112,7 +120,8 @@ We are using Cloudflare Proxy, so we use **Cloudflare Origin Certificates** for 
 To view your data safely from your local machine:
 
 1.  Open **MongoDB Compass**.
-2.  Set Connection String: `mongodb://admin:password@localhost:27017`
+2.  Set Connection String: `mongodb://admin:your_password@localhost:27017`
+    *Note: Use the **MONGO_ROOT_USER** and **MONGO_ROOT_PASSWORD** you created during setup.*
 3.  Go to **More Options** -> **SSH Tunnel**.
 4.  SSH Host: `Your Server IP`
 5.  SSH Username: `Your VPS Username`
