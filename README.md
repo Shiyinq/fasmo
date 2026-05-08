@@ -26,54 +26,80 @@ The frontend of the project is built using SvelteKit, initialized with the comma
 # Table of Contents
 - [FASMO](#fasmo)
 - [Table of Contents](#table-of-contents)
+  - [Quick Start](#quick-start)
   - [Development](#development)
     - [Backend](#backend)
     - [Frontend](#frontend)
-  - [Formatting](#formatting)
+  - [Quality Control](#quality-control)
+  - [Docker Quick Start (Local)](#docker-quick-start-local)
   - [Deployment](#deployment)
 
 
-## Development
+## Quick Start
+
+If you have `make` installed, follow these steps:
+
+**1. Create and edit environment files**
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+```
+Update the values in both `.env` files as needed.
+
+**2. Install and Run**
+```bash
+# Install all dependencies (Backend & Frontend)
+make install
+
+# Run both Backend and Frontend
+make dev
+
+# Run quality checks (Linting & Tests)
+make check
+```
 
 ### Backend
 
-**1. Create a Virtual Environment (venv)**
+**1. Create the .env File**
 
-Create a virtual environment (venv) using conda with the following command:
+Create and update `.env` file based on `.env.example`:
 
-```
-conda create -n [venv-name] python=3.10
-```
-
-Activate the venv with the following command:
-
-```
-conda activate [venv-name]
-```
-**2. Install requirements**
-
-Install the required dependencies with the following command:
-
-```
-pip install -r requirements/dev.txt
-```
-**3. Create the .env File**
-
-Create and update `.env` file based on `.env.example`
-
-```
+```bash
 cp .env.example .env
 ```
+Update the values in the `.env` file as needed.
 
-**4. Run the backend**
+**2. Setup Environment**
 
-Run the server with the following command:
+Using Makefile:
 
+```bash
+make install-be
 ```
-sh script/start-dev.sh
+
+Alternatively, manual steps:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements/base.txt -r requirements/dev.txt
 ```
 
-**5. Open the API Documentation**
+**3. Run the backend**
+
+Run the server using Makefile:
+
+```bash
+make dev-be
+```
+
+Or manually:
+
+```bash
+sh scripts/start-dev.sh
+```
+
+**4. Open the API Documentation**
 
 The API documentation can be opened in a browser at the following address:
 
@@ -82,69 +108,96 @@ http://localhost:8000/docs
 ```
 
 ### Frontend
-**1. Go to frontend folder**
 
-Go to frontend folder and install dependencies:
+**1. Create the .env File**
+
+Create and update `.env` file based on `.env.example`:
+
+```bash
+cp frontend/.env.example frontend/.env
 ```
+Update the values in the `.env` file as needed.
+
+**2. Install dependencies**
+
+Using Makefile:
+```bash
+make install-fe
+```
+
+Or manually:
+```bash
 cd frontend
 npm install
 ```
 
-**2. Create the .env File**
-
-Create and update `.env` file based on `.env.example`
-
-```
-cp .env.example .env
-```
-
 **3. Run the frontend**
 
-Run development server
+Using Makefile:
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+make dev-fe
 ```
 
-## Formatting
-To make the code cleaner and more structured
+Or manually:
+```bash
+cd frontend
+npm run dev
+```
+
+## Quality Control
+To ensure code quality and consistency.
+
+Using Makefile:
+```bash
+# Run all checks
+make check
+
+# Run only backend checks
+make check-be
+
+# Run only frontend checks
+make check-fe
+```
+
+Or manually:
 
 Backend:
-```
-sh scripts/lint-fromat.sh
+```bash
+sh scripts/lint-format.sh
+pytest
 ```
 Frontend:
-```
-npm run lint
+```bash
+cd frontend
+npm run check
 npm run format
+npm run lint
 ```
+
+## Docker Quick Start (Local)
+
+If you have [Docker](https://docs.docker.com/engine/install/) installed and want to run the project locally using containers:
+
+**1. Create and edit environment files**
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+```
+Update the values in both `.env` files as needed.
+
+**2. Run with Makefile**
+```bash
+# Start in development mode
+make docker-dev
+
+# Start in production mode
+make docker-prod
+```
+
+**3. Access the app**
+- Frontend: http://localhost:5050
+- Backend: http://localhost:8000
 
 ## Deployment
 
-Before you begin, ensure you have [Docker](https://docs.docker.com/engine/install/) installed.
-
-**1. Create environment files**
-
-For the backend:
-```bash
-cp .env.example .env
-```
-
-For the frontend:
-```bash
-cd frontend
-cp .env.example .env
-cd ..
-```
-
-Open each `.env` file you have created and update the values as needed.
-
-**2. Build and run the Docker containers**
-```bash
-docker compose up --build -d
-```
-Wait a few minutes for the setup to complete. You can then access:
-- Frontend at http://localhost:5050
-- Backend at http://localhost:8000
+For detailed production deployment instructions, including VPS setup and CI/CD, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
