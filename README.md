@@ -37,8 +37,16 @@ The frontend of the project is built using SvelteKit, initialized with the comma
 
 ## Quick Start
 
-If you have `make` installed, you can use these shortcuts:
+If you have `make` installed, follow these steps:
 
+**1. Create and edit environment files**
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+```
+Update the values in both `.env` files as needed.
+
+**2. Install and Run**
 ```bash
 # Install all dependencies (Backend & Frontend)
 make install
@@ -52,9 +60,18 @@ make check
 
 ### Backend
 
-**1. Setup Environment**
+**1. Create the .env File**
 
-The easiest way is to use the Makefile, which will create a virtual environment and install dependencies:
+Create and update `.env` file based on `.env.example`:
+
+```bash
+cp .env.example .env
+```
+Update the values in the `.env` file as needed.
+
+**2. Setup Environment**
+
+Using Makefile:
 
 ```bash
 make install-be
@@ -66,14 +83,6 @@ Alternatively, manual steps:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements/base.txt -r requirements/dev.txt
-```
-
-**2. Create the .env File**
-
-Create and update `.env` file based on `.env.example`
-
-```bash
-cp .env.example .env
 ```
 
 **3. Run the backend**
@@ -99,7 +108,17 @@ http://localhost:8000/docs
 ```
 
 ### Frontend
-**1. Install dependencies**
+
+**1. Create the .env File**
+
+Create and update `.env` file based on `.env.example`:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+Update the values in the `.env` file as needed.
+
+**2. Install dependencies**
 
 Using Makefile:
 ```bash
@@ -110,14 +129,6 @@ Or manually:
 ```bash
 cd frontend
 npm install
-```
-
-**2. Create the .env File**
-
-Create and update `.env` file based on `.env.example`
-
-```bash
-cp frontend/.env.example frontend/.env
 ```
 
 **3. Run the frontend**
@@ -167,11 +178,12 @@ npm run lint
 
 If you have [Docker](https://docs.docker.com/engine/install/) installed and want to run the project locally using containers:
 
-**1. Create environment files**
+**1. Create and edit environment files**
 ```bash
 cp .env.example .env
 cp frontend/.env.example frontend/.env
 ```
+Update the values in both `.env` files as needed.
 
 **2. Run with Makefile**
 ```bash
