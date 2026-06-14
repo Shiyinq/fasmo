@@ -37,7 +37,21 @@ The frontend of the project is built using SvelteKit, initialized with the comma
 
 ## Quick Start
 
-If you have `make` installed, follow these steps:
+### ⚡ One-Line Installation (Recommended)
+
+The easiest way to get started is by using our installation script. Run the following command in your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Shiyinq/fasmo/main/install.sh | bash
+```
+
+The script will ask for your project name, clone the repository, clean up the git history, and set up your `.env` files automatically.
+
+---
+
+### Manual Installation
+
+If you prefer to set it up manually and have `make` installed, follow these steps:
 
 **1. Create and edit environment files**
 ```bash
