@@ -52,9 +52,9 @@ PROJECT_UPPER=$(echo "$PROJECT_NAME" | tr '[:lower:]' '[:upper:]')
 
 echo -e "${GREEN}➤ Customizing project name...${NC}"
 # Replace 'fasmo' with the new project name across all files
-find . -type f -not -path '*/\.git/*' -exec perl -pi -e "s\|fasmo\|$PROJECT_LOWER\|g" {} + 2>/dev/null || true
-find . -type f -not -path '*/\.git/*' -exec perl -pi -e "s\|FASMO\|$PROJECT_UPPER\|g" {} + 2>/dev/null || true
-find . -type f -not -path '*/\.git/*' -exec perl -pi -e "s\|Fasmo\|$PROJECT_NAME\|g" {} + 2>/dev/null || true
+find . -type f -not -path '*/\.git/*' -exec perl -pi -e "s~fasmo~$PROJECT_LOWER~g" {} + 2>/dev/null || true
+find . -type f -not -path '*/\.git/*' -exec perl -pi -e "s~FASMO~$PROJECT_UPPER~g" {} + 2>/dev/null || true
+find . -type f -not -path '*/\.git/*' -exec perl -pi -e "s~Fasmo~$PROJECT_NAME~g" {} + 2>/dev/null || true
 
 echo -e "${GREEN}➤ Cleaning up git history...${NC}"
 rm -rf .git
