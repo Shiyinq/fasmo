@@ -36,6 +36,7 @@ if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "." ]; then
     fi
     echo -e "\n${GREEN}➤ Cloning FASMO repository into current directory...${NC}"
     git clone -q https://github.com/Shiyinq/fasmo.git .
+    PROJECT_NAME=$(basename "$PWD")
 else
     # Install in new directory
     if [ -d "$PROJECT_NAME" ]; then
