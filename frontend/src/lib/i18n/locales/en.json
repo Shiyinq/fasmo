@@ -181,5 +181,15 @@
 		},
 		"goHome": "Back to Home",
 		"tryAgain": "Try Again"
+	},
+	"pwa": {
+		"newVersion": "A new version is available!",
+		"later": "Later",
+		"reload": "Reload"
+	},
+	"offline": {
+		"title": "You Are Offline",
+		"description": "Your internet connection was lost. Please check your Wi-Fi or mobile data network, then try again.",
+		"reloadButton": "Try Reloading"
 	}
 }

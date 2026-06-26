@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
+import { building } from '$app/environment';
 
 export type Locale = 'id' | 'en';
 
@@ -9,9 +10,11 @@ export function detectLocale(request: Request, cookies: Cookies, url: URL): Loca
 	const STORAGE_KEY = 'app_locale';
 
 	// 1. URL Priority (?lang=)
-	const urlLocale = url.searchParams.get('lang');
-	if (urlLocale && (urlLocale === 'id' || urlLocale === 'en')) {
-		return urlLocale as Locale;
+	if (!building) {
+		const urlLocale = url.searchParams.get('lang');
+		if (urlLocale && (urlLocale === 'id' || urlLocale === 'en')) {
+			return urlLocale as Locale;
+		}
 	}
 
 	// 2. Cookie Priority

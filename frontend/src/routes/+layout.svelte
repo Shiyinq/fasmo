@@ -11,6 +11,8 @@
 	import SplashScreen from '$lib/components/SplashScreen.svelte';
 	import SEO from '$lib/components/common/SEO.svelte';
 	import { logger } from '$lib/utils/logger';
+	import OfflinePage from './offline/+page.svelte';
+	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
 
 	interface Props {
 		data: { locale: string };
@@ -27,9 +29,23 @@
 	});
 
 	let mounted = $state(false);
+	let isOffline = $state(false);
 
 	onMount(() => {
 		mounted = true;
+
+		isOffline = !navigator.onLine;
+
+		const setOffline = () => (isOffline = true);
+		const setOnline = () => (isOffline = false);
+
+		window.addEventListener('offline', setOffline);
+		window.addEventListener('online', setOnline);
+
+		return () => {
+			window.removeEventListener('offline', setOffline);
+			window.removeEventListener('online', setOnline);
+		};
 	});
 
 	// Check if the current page is public
@@ -79,6 +95,7 @@
 
 <SEO />
 <ModeWatcher />
+<ReloadPrompt />
 
 <div class="min-h-screen flex flex-col relative overflow-x-hidden">
 	{#if !mounted}
@@ -86,7 +103,11 @@
 	{:else}
 		<LoadingBar />
 		<main class="flex-1 w-full relative">
-			{@render children()}
+			{#if isOffline}
+				<OfflinePage />
+			{:else}
+				{@render children()}
+			{/if}
 		</main>
 		<Toaster position="bottom-right" richColors />
 	{/if}

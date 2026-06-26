@@ -110,9 +110,7 @@
 		<div class="container flex h-16 items-center justify-between py-4">
 			<div class="flex items-center gap-4">
 				<div class="flex items-center gap-2 font-bold text-xl tracking-tight mr-4">
-					<div class="bg-primary text-primary-foreground rounded-md p-1">
-						<Activity class="w-5 h-5" />
-					</div>
+					<img src="/favicon.png" alt="Logo" class="w-8 h-8 rounded-full" />
 					FASMO
 				</div>
 				<Separator orientation="vertical" class="h-6 hidden md:block" />
