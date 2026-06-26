@@ -1,19 +1,39 @@
+import asyncio
+
 import resend
 
-from src.config import config
+from src.config import Settings
+from src.interfaces import BackgroundTaskRunner
 from src.logging_config import create_logger
 
 logger = create_logger("email", __name__)
 
 # Setup Resend
-resend.api_key = config.resend_api_key
+# Setup Resend will be done in init or globally?
+# Ideally we shouldn't have global side effects on import.
+# But for now let's keep the global resend.api_key assignment logic BUT move it to init if we want pure decoupling.
+# However, resend is a library with global state.
+# Let's injecting config first.
 
 
 class EmailService:
-    @staticmethod
-    async def send_email_verification(email: str, token: str, username: str):
+    def __init__(self, config: Settings, background_tasks: BackgroundTaskRunner = None):
+        self.config = config
+        self.background_tasks = background_tasks
+        resend.api_key = self.config.resend_api_key
+
+    async def _send_email(self, payload: dict):
+        try:
+            logger.info("Sending email")
+            # Run blocking I/O (network request) in thread pool
+            await asyncio.to_thread(resend.Emails.send, payload)
+            logger.info("Email sent successfully")
+        except Exception as e:
+            logger.exception(f"Error sending email: {e}")
+
+    async def send_email_verification(self, email: str, token: str, username: str):
         """Send email verification"""
-        verification_url = f"{config.frontend_url}/auth/verify-email?token={token}"
+        verification_url = f"{self.config.frontend_url}/auth/verify-email?token={token}"
 
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -28,35 +48,28 @@ class EmailService:
             </div>
             <p>Or copy this link to your browser:</p>
             <p style="word-break: break-all; color: #666;">{verification_url}</p>
-            <p>This link will expire in {config.email_verification_expire_hours} hours.</p>
+            <p>This link will expire in {self.config.email_verification_expire_hours} hours.</p>
             <p>If you did not register with Fasmo, please ignore this email.</p>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px;">Fasmo</p>
         </div>
         """
 
-        try:
-            logger.info(f"Sending verification email to {email}")
-            r = resend.Emails.send(
-                {
-                    "from": config.email_from,
-                    "to": email,
-                    "subject": "Verify Your Email - Fasmo",
-                    "html": html_content,
-                }
-            )
-            logger.info(f"Email sent successfully to {email}")
-            return r
-        except Exception as e:
-            logger.exception(
-                f"[EMAIL_VERIFICATION] Error sending email to {email}: {e}"
-            )
-            return None
+        payload = {
+            "from": self.config.email_from,
+            "to": email,
+            "subject": "Verify Your Email - Fasmo",
+            "html": html_content,
+        }
 
-    @staticmethod
-    async def send_password_reset(email: str, token: str, username: str):
+        if self.background_tasks:
+            self.background_tasks.add_task(self._send_email, payload)
+        else:
+            await self._send_email(payload)
+
+    async def send_password_reset(self, email: str, token: str, username: str):
         """Send password reset email"""
-        reset_url = f"{config.frontend_url}/auth/reset-password?token={token}"
+        reset_url = f"{self.config.frontend_url}/reset-password?token={token}"
 
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -71,34 +84,27 @@ class EmailService:
             </div>
             <p>Or copy this link to your browser:</p>
             <p style="word-break: break-all; color: #666;">{reset_url}</p>
-            <p>This link will expire in {config.password_reset_expire_hours} hour.</p>
+            <p>This link will expire in {self.config.password_reset_expire_hours} hour.</p>
             <p>If you did not request a password reset, please ignore this email. Your password will not be changed.</p>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px;">Fasmo</p>
         </div>
         """
 
-        try:
-            logger.info(f"Sending password reset email to {email}")
-            r = resend.Emails.send(
-                {
-                    "from": config.email_from,
-                    "to": email,
-                    "subject": "Reset Your Password - Fasmo",
-                    "html": html_content,
-                }
-            )
-            logger.info(f"Email sent successfully to {email}")
-            return r
-        except Exception as e:
-            logger.exception(
-                f"[PASSWORD_RESET] Error sending password reset email to {email}: {e}"
-            )
-            return None
+        payload = {
+            "from": self.config.email_from,
+            "to": email,
+            "subject": "Reset Your Password - Fasmo",
+            "html": html_content,
+        }
 
-    @staticmethod
+        if self.background_tasks:
+            self.background_tasks.add_task(self._send_email, payload)
+        else:
+            await self._send_email(payload)
+
     async def send_account_locked_notification(
-        email: str, username: str, lockout_duration: int
+        self, email: str, username: str, lockout_duration: int
     ):
         """Send account locked notification"""
         html_content = f"""
@@ -114,22 +120,14 @@ class EmailService:
         </div>
         """
 
-        try:
-            logger.info(
-                f"[ACCOUNT_LOCKED] Sending account locked notification to {email}"
-            )
-            r = resend.Emails.send(
-                {
-                    "from": config.email_from,
-                    "to": email,
-                    "subject": "Account Locked - Fasmo",
-                    "html": html_content,
-                }
-            )
-            logger.info(f"Email sent successfully to {email}")
-            return r
-        except Exception as e:
-            logger.exception(
-                f"[ACCOUNT_LOCKED] Error sending account locked notification to {email}: {e}"
-            )
-            return None
+        payload = {
+            "from": self.config.email_from,
+            "to": email,
+            "subject": "Account Locked - Fasmo",
+            "html": html_content,
+        }
+
+        if self.background_tasks:
+            self.background_tasks.add_task(self._send_email, payload)
+        else:
+            await self._send_email(payload)

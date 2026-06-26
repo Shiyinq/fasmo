@@ -1,0 +1,27 @@
+name: Production Deployment
+
+on:
+  # push:
+  #   tags:
+  #     - 'v*'
+  # This allows you to run the deployment manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://fasmo.app
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.REMOTE_TARGET }}
+            git pull origin main
+            make docker-prod
+            docker image prune -f

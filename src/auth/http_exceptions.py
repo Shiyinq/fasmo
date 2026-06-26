@@ -1,5 +1,11 @@
-from src.http_exceptions import BadRequest, NotAuthenticated, NotFound, PermissionDenied
 from src.auth.constants import ErrorCode
+from src.http_exceptions import (
+    BadRequest,
+    InternalServerError,
+    NotAuthenticated,
+    NotFound,
+    PermissionDenied,
+)
 
 
 class IncorrectEmailOrPassword(NotAuthenticated):
@@ -22,8 +28,16 @@ class SuspiciousActivity(NotAuthenticated):
     DETAIL = ErrorCode.SUSPICIOUS_ACTIVITY
 
 
+class AccountLocked(BadRequest):  # Assuming 400 for now, or use Forbidden (403)
+    DETAIL = ErrorCode.ACCOUNT_LOCKED
+
+
+class EmailNotVerified(BadRequest):
+    DETAIL = ErrorCode.EMAIL_NOT_VERIFIED
+
+
 class InvalidCSRFToken(PermissionDenied):
-    DETAIL = "Invalid CSRF token"
+    DETAIL = ErrorCode.INVALID_CSRF_TOKEN
 
 
 class EmailNotFoundOrVerified(NotFound):
@@ -46,5 +60,5 @@ class PasswordPolicyViolation(BadRequest):
     DETAIL = ErrorCode.PASSWORD_POLICY_VIOLATION
 
 
-class InvalidJWTToken(BadRequest):
-    DETAIL = ErrorCode.INVALID_JWT_TOKEN
+class AuthOperationFailed(InternalServerError):
+    DETAIL = ErrorCode.AUTH_OPERATION_FAILED

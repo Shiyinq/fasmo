@@ -2,13 +2,16 @@
 FROM python:3.12.11-slim
 
 # Install build tools & deps for pandas/numpy/scipy
-RUN apt-get update && apt-get install -y \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
     gcc \
     g++ \
     make \
     libopenblas-dev \
     liblapack-dev \
     gfortran \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
@@ -17,17 +20,18 @@ WORKDIR /app
 # Copy the entire requirements directory
 COPY requirements /app/requirements
 
-# Install production dependencies
-RUN pip install --no-cache-dir -r /app/requirements/prod.txt
+# Upgrade pip and install production dependencies using cache mounts
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install -r /app/requirements/prod.txt
 
 # Copy the src directory contents into the container at /app/src
 COPY src /app/src
 
-# Copy .env file into the container
-COPY .env /app/.env
+# Copy scripts directory
+COPY scripts /app/scripts
 
-# Copy the production start script and make it executable
-COPY scripts/start-prod.sh /app/scripts/start-prod.sh
+# Make it executable
 RUN chmod +x /app/scripts/start-prod.sh
 
 # Create log directory and set permissions so the app can write logs

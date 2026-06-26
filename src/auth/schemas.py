@@ -1,7 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+
+from src.auth.http_exceptions import PasswordPolicyViolation, PasswordsNotMatch
+from src.utils import validate_password_strength
 
 
 class UserLoginBase(BaseModel):
@@ -13,7 +16,7 @@ class UserLoginBase(BaseModel):
 
 
 class UserLogin(UserLoginBase):
-    password: str = None
+    password: Optional[str] = None
     isEmailVerified: bool = False
     failedLoginAttempts: int = 0
     isAccountLocked: bool = False
@@ -39,8 +42,8 @@ class RefreshTokenData(BaseModel):
     device: str
     ip: str
     browser: str
-    createdAt: Optional[str] = None
-    lastUsedAt: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    lastUsedAt: Optional[datetime] = None
 
 
 class LoginHistory(BaseModel):
@@ -48,7 +51,7 @@ class LoginHistory(BaseModel):
     device: str
     ip: str
     browser: str
-    loginAt: str
+    loginAt: datetime
     userAgentRaw: Optional[str] = None
 
 
@@ -82,6 +85,16 @@ class PasswordResetConfirmRequest(BaseModel):
     token: str
     new_password: str
     confirm_password: str
+
+    @model_validator(mode="after")
+    def verify_password_match(self):
+        if self.new_password != self.confirm_password:
+            raise PasswordsNotMatch()
+
+        if not validate_password_strength(self.new_password):
+            raise PasswordPolicyViolation()
+
+        return self
 
 
 class PasswordResetConfirmResponse(BaseModel):

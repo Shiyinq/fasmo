@@ -1,0 +1,108 @@
+name: CI Check
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'nginx/**'
+      - '.agent/**'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.cursorignore'
+      - 'LICENSE'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'nginx/**'
+      - '.agent/**'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.cursorignore'
+      - 'LICENSE'
+
+jobs:
+  frontend-check:
+    name: Frontend Check
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_CLIENT_SIDE_API_BASE_URL: http://localhost:8000/api
+      PUBLIC_SERVER_SIDE_API_BASE_URL: http://localhost:8000/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint check
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Type check
+        run: npm run check
+        working-directory: frontend
+
+      - name: Build check
+        run: npm run build
+        working-directory: frontend
+
+  backend-check:
+    name: Backend Check
+    runs-on: ubuntu-latest
+
+    env:
+      ENV: dev
+      SECRET_KEY: dummy_secret_key_for_testing_12345
+      ALGORITHM: HS256
+      MONGODB_URI: mongodb://localhost:27018
+      GOOGLE_CLIENT_ID: dummy
+      GOOGLE_CLIENT_SECRET: dummy
+      GOOGLE_REDIRECT_URI: http://localhost
+      GITHUB_CLIENT_ID: dummy
+      GITHUB_CLIENT_SECRET: dummy
+      GITHUB_REDIRECT_URI: http://localhost
+      GEMINI_API_KEY: dummy
+      FRONTEND_URL: http://localhost:3000
+      ORIGINS: http://localhost:3000
+      RESEND_API_KEY: dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.11'
+          cache: 'pip'
+          cache-dependency-path: requirements/*.txt
+
+      - name: Start Services
+        run: |
+          # Use your own docker-compose to start services
+          docker compose up -d mongodb
+          
+          echo "Waiting for MongoDB..."
+          # Wait for port 27018 to be open
+          until timeout 1 bash -c "cat < /dev/null > /dev/tcp/localhost/27018" 2>/dev/null; do
+            sleep 2
+          done
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/base.txt -r requirements/dev.txt
+
+      - name: Run tests
+        run: |
+          pytest

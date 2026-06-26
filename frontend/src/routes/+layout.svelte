@@ -1,53 +1,93 @@
-<script>
-	import Header from './Header.svelte';
+<script lang="ts">
 	import '../app.css';
-</script>
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { isAuthenticated, authStore, isInitialDataLoaded } from '$lib/stores';
+	import { locale, type Locale } from '$lib/i18n';
+	import { ModeWatcher } from 'mode-watcher';
+	import { Toaster } from '$lib/components/ui/sonner';
+	import LoadingBar from '$lib/components/LoadingBar.svelte';
+	import SplashScreen from '$lib/components/SplashScreen.svelte';
+	import SEO from '$lib/components/common/SEO.svelte';
+	import { logger } from '$lib/utils/logger';
 
-<div class="app">
-	<Header />
-
-	<main>
-		<slot />
-	</main>
-
-	<footer>
-		<p>visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to learn SvelteKit</p>
-	</footer>
-</div>
-
-<style>
-	.app {
-		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
+	interface Props {
+		data: { locale: string };
+		children: import('svelte').Snippet;
 	}
 
-	main {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		padding: 1rem;
-		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
-		box-sizing: border-box;
-	}
+	let { data, children }: Props = $props();
 
-	footer {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		padding: 12px;
-	}
+	// Hydrate locale from server data
+	$effect(() => {
+		if (data?.locale) {
+			locale.value = data.locale as Locale;
+		}
+	});
 
-	footer a {
-		font-weight: bold;
-	}
+	let mounted = $state(false);
 
-	@media (min-width: 480px) {
-		footer {
-			padding: 12px 0;
+	onMount(() => {
+		mounted = true;
+	});
+
+	// Check if the current page is public
+	let isPublicPage = $derived(
+		page.url.pathname === '/' ||
+			page.url.pathname === '/login' ||
+			page.url.pathname === '/register' ||
+			page.url.pathname === '/forgot-password' ||
+			page.url.pathname === '/reset-password' ||
+			page.url.pathname.startsWith('/auth/')
+	);
+
+	// Check if the current page is for guests only
+	let isGuestRoute = $derived(
+		page.url.pathname === '/login' ||
+			page.url.pathname === '/register' ||
+			page.url.pathname === '/forgot-password' ||
+			page.url.pathname === '/reset-password'
+	);
+
+	// Fetch initial data (profile) if authenticated
+	async function fetchInitialData() {
+		if (isInitialDataLoaded.value) return;
+		try {
+			await authStore.getProfile();
+		} catch (err) {
+			logger.error('Failed to load profile', err, { context: 'layout' });
+		} finally {
+			isInitialDataLoaded.value = true;
 		}
 	}
-</style>
+
+	// Reactive Auth Guard
+	$effect(() => {
+		if (mounted) {
+			if (isAuthenticated.value) {
+				fetchInitialData();
+				if (isGuestRoute) {
+					goto('/app');
+				}
+			} else if (!isPublicPage) {
+				goto('/login');
+			}
+		}
+	});
+</script>
+
+<SEO />
+<ModeWatcher />
+
+<div class="min-h-screen flex flex-col relative overflow-x-hidden">
+	{#if !mounted}
+		<SplashScreen />
+	{:else}
+		<LoadingBar />
+		<main class="flex-1 w-full relative">
+			{@render children()}
+		</main>
+		<Toaster position="bottom-right" richColors />
+	{/if}
+</div>

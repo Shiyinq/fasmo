@@ -8,6 +8,7 @@ class ErrorCode:
     INVALID_JWT_TOKEN = "Invalid JWT token."
     REFRESH_TOKEN_EXPIRED = "Refresh token expired, please login again."
     SUSPICIOUS_ACTIVITY = "Suspicious activity detected, please login again."
+    INVALID_CSRF_TOKEN = "Invalid CSRF token."
 
     # Email verification errors
     EMAIL_NOT_FOUND_OR_VERIFIED = "Email not found or already verified."
@@ -22,6 +23,9 @@ class ErrorCode:
     PASSWORD_POLICY_VIOLATION = "Password must be at least 8 characters with uppercase, lowercase, digits, and symbols."
     PASSWORD_RESET_SUCCESS = "Password reset successfully!"
     PASSWORD_RESET_TOKEN_INVALID = "Password reset token is invalid or has expired."
+    ACCOUNT_LOCKED = "Account is locked."
+    EMAIL_NOT_VERIFIED = "Email is not verified."
+    AUTH_OPERATION_FAILED = "Authentication operation failed."
 
 
 class DomainErrorCode:
@@ -39,6 +43,8 @@ class DomainErrorCode:
     PASSWORD_POLICY_VIOLATION = "Password policy violation"
     USER_NOT_FOUND = "User not found"
     TOKEN_VALIDATION_FAILED = "Token validation failed"
+    INVALID_JWT_TOKEN = "Invalid JWT token"
+    AUTH_OPERATION_FAILED = "Authentication operation failed"
 
 
 class Info:

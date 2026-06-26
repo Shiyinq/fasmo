@@ -1,5 +1,5 @@
-from src.users.constants import DomainErrorCode
 from src.exceptions import DomainException
+from src.users.constants import DomainErrorCode
 
 
 class UserCreationError(DomainException):

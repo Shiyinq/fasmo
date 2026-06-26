@@ -1,56 +1,58 @@
+import os
 import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 
 from src.api import router as api_router
 from src.config import config
 from src.database import database_instance
-from src.logging_config import request_id_ctx_var
 
+if config.oauthlib_insecure_transport:
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+from src.exception_handlers import (
+    detailed_http_exception_handler,
+    domain_exception_handler,
+    request_validation_exception_handler,
+)
 from src.exceptions import DomainException
-from src.exception_handlers import detailed_http_exception_handler, domain_exception_handler
-from src.http_exceptions import DetailedHTTPException, EntityTooLarge
-from src.utils_db import create_indexes
+from src.http_exceptions import BadRequest, DetailedHTTPException, EntityTooLarge
+from src.limiter import limiter
+from src.logging_config import request_id_ctx_var
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to the database
     await database_instance.connect()
-    # Create indexes on startup
-    await create_indexes()
+
     yield
-    # Shutdown: Close the database connection
+
     await database_instance.close()
 
 
-# Setup rate limiter with global default limits
-limiter = Limiter(
-    key_func=get_remote_address, 
-    default_limits=[f"{config.default_requests_per_minute}/minute"]
-)
-
 app = FastAPI(
     title="Fasmo API",
-    openapi_url="/api/openapi.json" if config.is_env_dev else None,  # Disable docs schema in prod
-    docs_url="/docs" if config.is_env_dev else None,                # Disable Swagger UI in prod
-    redoc_url="/redoc" if config.is_env_dev else None,              # Disable ReDoc in prod
-    debug=config.is_env_dev,                                        # Enable debug only in dev
-    lifespan=lifespan
+    openapi_url="/api/openapi.json"
+    if config.is_env_dev
+    else None,  # Disable docs schema in prod
+    docs_url="/docs" if config.is_env_dev else None,  # Disable Swagger UI in prod
+    redoc_url="/redoc" if config.is_env_dev else None,  # Disable ReDoc in prod
+    debug=config.is_env_dev,  # Enable debug only in dev
+    lifespan=lifespan,
 )
 
-# Exception Handlers
+
 app.add_exception_handler(DomainException, domain_exception_handler)
 app.add_exception_handler(DetailedHTTPException, detailed_http_exception_handler)
+app.add_exception_handler(RequestValidationError, request_validation_exception_handler)
 
-# Add rate limiter to app
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -58,12 +60,14 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.middleware("http")
 async def limit_upload_size(request: Request, call_next):
-    # Max body size: 1 MB (adjust if you need to handle file uploads)
-    max_upload_size = config.max_upload_size_bytes 
+    max_upload_size = config.max_upload_size_bytes
     content_length = request.headers.get("content-length")
     if content_length:
-        if int(content_length) > max_upload_size:
-            raise EntityTooLarge()
+        try:
+            if int(content_length) > max_upload_size:
+                raise EntityTooLarge()
+        except ValueError:
+            raise BadRequest()
     return await call_next(request)
 
 
@@ -83,8 +87,10 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    
+    response.headers[
+        "Strict-Transport-Security"
+    ] = "max-age=31536000; includeSubDomains"
+
     if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
@@ -96,8 +102,10 @@ async def add_security_headers(request: Request, call_next):
             "connect-src 'self'"
         )
     else:
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'"
-    
+        response.headers[
+            "Content-Security-Policy"
+        ] = "default-src 'self'; script-src 'self'"
+
     return response
 
 
@@ -105,7 +113,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=config.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=[
         "Accept",
         "Accept-Language",

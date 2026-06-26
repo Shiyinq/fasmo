@@ -1,3 +1,2 @@
-// since there's no dynamic data here, we can prerender
-// it so that it gets served as a static asset in production
-export const prerender = true;
+// Disable prerendering because we use dynamic locale detection in hooks.server.ts
+export const prerender = false;
