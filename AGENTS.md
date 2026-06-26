@@ -41,6 +41,9 @@ These define standard procedures — follow them when applicable:
 - If npm fails, init NVM: `source ~/.nvm/nvm.sh && nvm use default`
 - Production: `@sveltejs/adapter-node`, runs on port 5050 via `node build/index.js`
 - `.npmrc` has `engine-strict=true` — Node version must match range
+- **PWA**: enabled via `@vite-pwa/sveltekit` (Workbox `injectManifest` strategy) — custom service worker at `src/service-worker.ts`, offline fallback at `/offline`, update prompt via `ReloadPrompt.svelte`, manifest generated at build time, icons in `static/`
+- **UI**: use **shadcn-svelte** components (`src/lib/components/ui/`) first — check before building custom UI; 57+ components available (button, dialog, form, table, sidebar, etc.)
+- Add new shadcn component: `npx shadcn-svelte@latest add <nama>` (run from `frontend/`)
 
 ## Testing
 
