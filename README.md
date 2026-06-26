@@ -214,4 +214,4 @@ make docker-prod
 
 ## Deployment
 
-For detailed production deployment instructions, including VPS setup and CI/CD, please refer to [DEPLOYMENT.md](DEPLOYMENT.md).
+For detailed production deployment instructions, including VPS setup and CI/CD, please refer to [DEPLOYMENT.md](docs/DEPLOYMENT.md).
