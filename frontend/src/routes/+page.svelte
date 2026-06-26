@@ -16,38 +16,42 @@
 <SEO title="FASMO | {t('landing.hero')}" description={t('landing.tagline')} />
 
 <div
-	class="min-h-screen flex flex-col items-center justify-center text-center overflow-hidden bg-background"
+	class="min-h-screen flex flex-col items-center justify-center text-center overflow-x-hidden overflow-y-auto bg-background relative py-20"
 >
-	<nav class="absolute top-0 right-0 w-full flex justify-end items-center gap-3 z-10 p-4 md:p-6">
+	<nav
+		class="absolute top-0 right-0 w-full flex justify-end items-center gap-2 sm:gap-3 z-10 p-4 md:p-6"
+	>
 		<LanguageSwitcher />
 		<ThemeToggle />
 		{#if isAuthenticated.value}
-			<Button href="/app" variant="default" size="sm" class="rounded-full px-6 gap-2">
+			<Button href="/app" variant="default" size="sm" class="rounded-full px-4 sm:px-6 gap-2">
 				<LayoutDashboard class="w-4 h-4" />
-				{t('dashboard.title')}
+				<span class="hidden sm:inline">{t('dashboard.title')}</span>
+				<span class="sm:hidden">App</span>
 			</Button>
 		{:else}
 			<Button
 				href="/login"
 				variant="ghost"
 				size="sm"
-				class="text-muted-foreground hover:text-foreground"
+				class="text-muted-foreground hover:text-foreground px-2 sm:px-4"
 			>
 				{t('common.login')}
 			</Button>
-			<Button href="/register" size="sm" class="rounded-full px-6">
+			<Button href="/register" size="sm" class="rounded-full px-4 sm:px-6">
 				{t('common.register')}
 			</Button>
 		{/if}
 	</nav>
 
 	<div
-		class="max-w-5xl w-full flex flex-col items-center justify-center gap-12 px-6"
+		class="max-w-5xl w-full flex flex-col items-center justify-center gap-8 sm:gap-12 px-4 sm:px-6 mt-10 sm:mt-0"
 		in:fly={{ y: 20, duration: 1000 }}
 	>
-		<header class="flex flex-col items-center gap-6 w-full">
-			<pre
-				class="font-mono font-bold leading-tight whitespace-pre m-0 select-none text-center text-foreground/90 text-sm md:text-base lg:text-lg">
+		<header class="flex flex-col items-center gap-6 w-full max-w-full">
+			<div class="w-full overflow-x-auto overflow-y-hidden flex justify-center pb-4 scrollbar-hide">
+				<pre
+					class="font-mono font-bold leading-tight whitespace-pre m-0 select-none text-center text-foreground/90 text-[8px] min-[400px]:text-[10px] sm:text-xs md:text-sm lg:text-base">
 		('-.      .-')   _   .-')                
 	   ( OO ).-. ( OO ).( '.( OO )_              
 ,------./ . --. /(_)---\_),--.   ,--.).-'),-----. 
@@ -57,12 +61,13 @@
 \_)|  .--' |  .-.  |.-._)   \|  |   |  |  \ |  | |  |
   \|  |_)  |  | |  |\       /|  |   |  |   `'  '-'  '
    `--'    `--' `--' `-----' `--'   `--'     `-----'
-			</pre>
+				</pre>
+			</div>
 
-			<div class="flex items-center gap-2">
+			<div class="flex flex-wrap justify-center items-center gap-2">
 				<Badge
 					variant="secondary"
-					class="px-4 py-1 rounded-full font-mono text-[10px] uppercase tracking-widest bg-muted/50 border-muted"
+					class="px-3 sm:px-4 py-1 rounded-full font-mono text-[9px] sm:text-[10px] uppercase tracking-widest bg-muted/50 border-muted"
 					>FastAPI</Badge
 				>
 				<Badge

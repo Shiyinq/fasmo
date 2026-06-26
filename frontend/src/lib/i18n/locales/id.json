@@ -181,5 +181,15 @@
 		},
 		"goHome": "Kembali ke Beranda",
 		"tryAgain": "Coba Lagi"
+	},
+	"pwa": {
+		"newVersion": "Ada pembaruan versi baru!",
+		"later": "Nanti Saja",
+		"reload": "Muat Ulang"
+	},
+	"offline": {
+		"title": "Anda Sedang Offline",
+		"description": "Koneksi internet Anda terputus. Silakan periksa jaringan Wi-Fi atau data seluler Anda, lalu coba lagi.",
+		"reloadButton": "Coba Muat Ulang"
 	}
 }
